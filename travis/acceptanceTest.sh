@@ -4,11 +4,11 @@
 set -euov pipefail
 
 # Check presence of environment variables
-TRAVIS_BRANCH="${TRAVIS_BRANCH:-develop}"
-TRAVIS_BRANCH=${TRAVIS_BRANCH##*/} # Drop the "feature/<whatever>" from tagging
 TRAVIS_BUILD_NUMBER="${TRAVIS_BUILD_NUMBER:-0}"
 
-docker run --rm -d -p $2:$3 --name $1 ${DOCKER_USERNAME}/$1:travis_${TRAVIS_BRANCH}_${TRAVIS_BUILD_NUMBER}
+buildTag=travis_$TRAVIS_BUILD_NUMBER # We use a temporary build number for tagging, since this is a transient artefact
+
+docker run --rm -d -p $2:$3 --name $1 eoepca/$1:${buildTag} # Runs container from EOEPCA repository
 
 sleep 15 # wait until the container is running
 

@@ -9,12 +9,12 @@ TRAVIS_BRANCH=${TRAVIS_BRANCH##*/} # Drop the "feature/<whatever>" from tagging
 TRAVIS_BUILD_NUMBER="${TRAVIS_BUILD_NUMBER:-0}"
 
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-docker pull $DOCKER_USERNAME/$1:travis_${TRAVIS_BRANCH}_$TRAVIS_BUILD_NUMBER  # have to pull locally in order to tag as a release
+docker pull eoepca/$1:travis_${TRAVIS_BRANCH}_$TRAVIS_BUILD_NUMBER  # have to pull locally in order to tag as a release
 
 # Tag and push as a Release
-docker tag $DOCKER_USERNAME/$1:travis_${TRAVIS_BRANCH}_$TRAVIS_BUILD_NUMBER $DOCKER_USERNAME/$1:release_$TRAVIS_TAG
-docker push $DOCKER_USERNAME/$1:release_$TRAVIS_TAG
+docker tag eoepca/$1:travis_${TRAVIS_BRANCH}_$TRAVIS_BUILD_NUMBER eoepca/$1:release_$TRAVIS_TAG
+docker push eoepca/$1:release_$TRAVIS_TAG
 
 # Tag and push as `latest`
-docker tag $DOCKER_USERNAME/$1:travis_${TRAVIS_BRANCH}_$TRAVIS_BUILD_NUMBER $DOCKER_USERNAME/$1:latest
-docker push $DOCKER_USERNAME/$1:latest
+docker tag eoepca/$1:travis_${TRAVIS_BRANCH}_$TRAVIS_BUILD_NUMBER eoepca/$1:latest
+docker push eoepca/$1:latest
