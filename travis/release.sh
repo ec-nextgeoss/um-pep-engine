@@ -4,17 +4,16 @@
 set -euov pipefail
 
 # Check presence of environment variables
-TRAVIS_BRANCH="${TRAVIS_BRANCH:-develop}"
-TRAVIS_BRANCH=${TRAVIS_BRANCH##*/} # Drop the "feature/<whatever>" from tagging
 TRAVIS_BUILD_NUMBER="${TRAVIS_BUILD_NUMBER:-0}"
+buildTag=travis_$TRAVIS_BUILD_NUMBER # We use a temporary build number for tagging, since this is a transient artefact
 
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-docker pull eoepca/$1:travis_${TRAVIS_BRANCH}_$TRAVIS_BUILD_NUMBER  # have to pull locally in order to tag as a release
+docker pull eoepca/$1:$buildTag  # have to pull locally in order to tag as a release
 
 # Tag and push as a Release
-docker tag eoepca/$1:travis_${TRAVIS_BRANCH}_$TRAVIS_BUILD_NUMBER eoepca/$1:release_$TRAVIS_TAG
-docker push eoepca/$1:release_$TRAVIS_TAG
+docker tag eoepca/$1:$buildTag eoepca/$1:release_$TRAVIS_BUILD_NUMBER
+docker push eoepca/$1:release_$TRAVIS_BUILD_NUMBER
 
 # Tag and push as `latest`
-docker tag eoepca/$1:travis_${TRAVIS_BRANCH}_$TRAVIS_BUILD_NUMBER eoepca/$1:latest
+docker tag eoepca/$1:$buildTag eoepca/$1:latest
 docker push eoepca/$1:latest
