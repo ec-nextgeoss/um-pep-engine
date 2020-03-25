@@ -1,7 +1,7 @@
 <!--
 ***
 *** To avoid retyping too much info. Do a search and replace for the following:
-*** um-service-template
+*** um-pep-engine
 -->
 
 <!-- PROJECT SHIELDS -->
@@ -21,22 +21,22 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/EOEPCA/um-service-template">
+  <a href="https://github.com/EOEPCA/um-pep-engine">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-  <h3 align="center">template-service</h3>
+  <h3 align="center">um-pep-engine</h3>
 
   <p align="center">
     Template for developing an EOEPCA Service
     <br />
-    <a href="https://github.com/EOEPCA/um-service-template"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/EOEPCA/um-pep-engine"><strong>Explore the docs »</strong></a>
     <br />
-    <a href="https://github.com/EOEPCA/um-service-template">View Demo</a>
+    <a href="https://github.com/EOEPCA/um-pep-engine">View Demo</a>
     ·
-    <a href="https://github.com/EOEPCA/um-service-template/issues">Report Bug</a>
+    <a href="https://github.com/EOEPCA/um-pep-engine/issues">Report Bug</a>
     ·
-    <a href="https://github.com/EOEPCA/um-service-template/issues">Request Feature</a>
+    <a href="https://github.com/EOEPCA/um-pep-engine/issues">Request Feature</a>
   </p>
 </p>
 
@@ -108,7 +108,7 @@ cd template-service
 
 ## Documentation
 
-The component documentation can be found at https://eoepca.github.io/um-service-template/.
+The component documentation can be found at https://eoepca.github.io/um-pep-engine/.
 
 <!-- USAGE EXAMPLES -->
 
@@ -122,7 +122,7 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 ## Roadmap
 
-See the [open issues](https://github.com/EOEPCA/um-service-template/issues) for a list of proposed features (and known issues).
+See the [open issues](https://github.com/EOEPCA/um-pep-engine/issues) for a list of proposed features (and known issues).
 
 <!-- CONTRIBUTING -->
 
@@ -146,7 +146,7 @@ Distributed under the Apache-2.0 License. See `LICENSE` for more information.
 
 [EOEPCA mailbox](eoepca.systemteam@telespazio.com)
 
-Project Link: [https://github.com/EOEPCA/um-service-template](https://github.com/EOEPCA/um-service-template)
+Project Link: [https://github.com/EOEPCA/um-pep-engine](https://github.com/EOEPCA/um-pep-engine)
 
 ## Acknowledgements
 
@@ -154,13 +154,13 @@ Project Link: [https://github.com/EOEPCA/um-service-template](https://github.com
 
 
 [contributors-shield]: https://img.shields.io/github/contributors/EOEPCA/um-pep-enginesvg?style=flat-square
-[contributors-url]: https://github.com/EOEPCA/um-service-template/graphs/contributors
+[contributors-url]: https://github.com/EOEPCA/um-pep-engine/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/EOEPCA/um-pep-enginesvg?style=flat-square
-[forks-url]: https://github.com/EOEPCA/um-service-template/network/members
+[forks-url]: https://github.com/EOEPCA/um-pep-engine/network/members
 [stars-shield]: https://img.shields.io/github/stars/EOEPCA/um-pep-enginesvg?style=flat-square
-[stars-url]: https://github.com/EOEPCA/um-service-template/stargazers
+[stars-url]: https://github.com/EOEPCA/um-pep-engine/stargazers
 [issues-shield]: https://img.shields.io/github/issues/EOEPCA/um-pep-enginesvg?style=flat-square
-[issues-url]: https://github.com/EOEPCA/um-service-template/issues
+[issues-url]: https://github.com/EOEPCA/um-pep-engine/issues
 [license-shield]: https://img.shields.io/github/license/EOEPCA/um-pep-enginesvg?style=flat-square
-[license-url]: https://github.com/EOEPCA/um-service-template/blob/master/LICENSE
+[license-url]: https://github.com/EOEPCA/um-pep-engine/blob/master/LICENSE
 [build-shield]: https://www.travis-ci.com/EOEPCA/um-pep-enginesvg?branch=master
