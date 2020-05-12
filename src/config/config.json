@@ -1,0 +1,15 @@
+{
+    "client_id": "b6346e7f-54bd-4c18-af17-0c3fe3d40d3b",
+    "client_secret": "testclientsecret",
+    "auth_server_url": "https://demoexample.gluu.org",
+
+    "proxy_endpoint": "/pep",
+    "service_host": "0.0.0.0",
+    "service_port": 5566,
+
+    "s_margin_rpt_valid": 5, 
+
+    "check_ssl_certs": false,
+    "use_threads": true,
+    "debug_mode": true
+}
