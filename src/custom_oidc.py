@@ -1,15 +1,28 @@
+#!/usr/bin/env python3
+
 from base64 import b64encode
 from WellKnownHandler import TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT
 
-def get_new_pat(wkh, oidc_client, client_id: str, client_secret: str, verify_ssl: bool = False):
-    """
-    Returns a new PAT using the OIDC client credentials in config
-    """
-    # Get PAT
-    client_creds = b64encode(bytes(client_id+":"+client_secret, 'utf-8')) # Basic auth
-    token_endpoint =  wkh.get(TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT)
-    token = oidc_client.postRequestToken(token_endpoint , token = client_creds, verify = verify_ssl)
-    if "access_token" in token:
-        return token["access_token"]
-    
-    raise Exception("Unexpected error getting a PAT: "+str(token))
+from requests import post
+
+class OIDCHandler:
+
+    def __init__(self, wkh, client_id: str, client_secret: str, redirect_uri: str, scopes, verify_ssl: bool = False):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.verify_ssl = verify_ssl
+        self.redirect_uri = redirect_uri
+        self.scopes = scopes
+        self.wkh = wkh
+
+    def get_new_pat(self):
+        """
+        Returns a new PAT
+        """
+        token_endpoint = self.wkh.get(TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT)
+        headers = {"content-type": "application/x-www-form-urlencoded", 'cache-control': "no-cache"}
+        payload = "grant_type=client_credentials&client_id="+self.client_id+"&client_secret="+self.client_secret+"&scope="+" ".join(self.scopes).replace(" ","%20")+"&redirect_uri="+self.redirect_uri
+        response = post(token_endpoint, data=payload, headers=headers, verify = self.verify_ssl)
+
+        return response.json()["access_token"]
+            

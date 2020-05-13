@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from json import load
 
 def load_config(config_path, resources_path):

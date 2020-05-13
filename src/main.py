@@ -10,28 +10,31 @@ from random import choice
 from string import ascii_lowercase
 
 from config import load_config
-from custom_oidc import get_new_pat
+from custom_oidc import OIDCHandler
 ### INITIAL SETUP
 # Global config objects
 g_config, g_resources_cfg = load_config("config/config.json", "config/resources.json")
 
 # Global handlers
 g_wkh = WellKnownHandler(g_config["auth_server_url"], secure=False)
-oidc_client = OpenIDClient(issuer = g_config["auth_server_url"],
+oidc_client = OIDCHandler(g_wkh,
+                            client_id = g_config["client_id"],
+                            client_secret = g_config["client_secret"],
+                            redirect_uri = "None", # TODO
                             scopes = ['openid', 'uma_protection', 'permission'],
-                            redirect_uri = None, # TODO
-                            authType = "Basic",
-                            verify = g_config["check_ssl_certs"])
+                            verify_ssl = g_config["check_ssl_certs"])
 
-pat = get_new_pat(g_wkh, oidc_client, g_config["client_id"], g_config["client_secret"], verify_ssl= g_config["check_ssl_certs"] )
+pat = oidc_client.get_new_pat()
 print("GOT PAT: "+str(pat))
 
 # Register a default resource "ADES Service". UMA scope "Authenticated", and endpoint URI.
 name = "ADES Service"
 resource_registration_endpoint = g_wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
-scopes = [""] # TODO
-icon_uri = "" # TODO
-resource.create(pat, resource_registration_endpoint, name, scopes, icon_uri, secure = g_config["check_ssl_certs"])
+scopes = ["Authenticated"]
+icon_uri = "/ADES" # TODO
+new_resource_id = resource.create(pat, resource_registration_endpoint, name, scopes, icon_uri= icon_uri, secure = g_config["check_ssl_certs"])
+print("Created:")
+print(new_resource_id)
 
 # Start reverse proxy for x endpoint
 app = Flask(__name__)
@@ -60,6 +63,7 @@ def resource_request():
         # TODO:
 
     else:
+        # TODO: Validate for a specific resource
         rpt = rpt.replace("Bearer ","").strip()
         # validate token for access.
         introspection_endpoint = g_wkh.get(TYPE_UMA_V2, KEY_UMA_V2_INTROSPECTION_ENDPOINT)
