@@ -2,19 +2,14 @@
 
 from json import load
 
-def load_config(config_path, resources_path):
+def load_config(config_path: str) -> dict:
     """
-    Parses and returns the config files
+    Parses and returns the config file
 
-    Returns: (dict, dict) <config, resources_cfg>
+    Returns: dict
     """
     config = {}
     with open(config_path) as j:
         config = load(j)
 
-    resources_cfg = {}
-    # setup config
-    with open(resources_path) as j:
-        resources_cfg = load(j)
-
-    return config, resources_cfg
+    return config

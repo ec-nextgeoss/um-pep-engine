@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from eoepca_oidc import OpenIDClient
-from eoepca_uma import rpt, resource
 from WellKnownHandler import WellKnownHandler, TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT
 from WellKnownHandler import KEY_UMA_V2_INTROSPECTION_ENDPOINT, KEY_UMA_V2_PERMISSION_ENDPOINT
 
@@ -11,12 +9,14 @@ from string import ascii_lowercase
 
 from config import load_config
 from custom_oidc import OIDCHandler
+from custom_uma import UMA_Handler
 ### INITIAL SETUP
 # Global config objects
-g_config, g_resources_cfg = load_config("config/config.json", "config/resources.json")
+g_config = load_config("config/config.json")
 
 # Global handlers
 g_wkh = WellKnownHandler(g_config["auth_server_url"], secure=False)
+
 oidc_client = OIDCHandler(g_wkh,
                             client_id = g_config["client_id"],
                             client_secret = g_config["client_secret"],
@@ -24,17 +24,8 @@ oidc_client = OIDCHandler(g_wkh,
                             scopes = ['openid', 'uma_protection', 'permission'],
                             verify_ssl = g_config["check_ssl_certs"])
 
-pat = oidc_client.get_new_pat()
-print("GOT PAT: "+str(pat))
-
-# Register a default resource "ADES Service". UMA scope "Authenticated", and endpoint URI.
-name = "ADES Service"
-resource_registration_endpoint = g_wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
-scopes = ["Authenticated"]
-icon_uri = "/ADES" # TODO
-new_resource_id = resource.create(pat, resource_registration_endpoint, name, scopes, icon_uri= icon_uri, secure = g_config["check_ssl_certs"])
-print("Created:")
-print(new_resource_id)
+uma_handler = UMA_Handler(g_wkh, oidc_client, g_config["check_ssl_certs"])
+uma_handler.status()
 
 # Start reverse proxy for x endpoint
 app = Flask(__name__)
@@ -48,7 +39,7 @@ app.run(
 
 ###########
 
-@app.route(g_config["proxy_endpoint"], methods=["GET"])
+@app.route(g_config["proxy_endpoint"]+'<path:path>', methods=["GET"])
 def resource_request():
     # Check for token
     pat = "" # TODO
