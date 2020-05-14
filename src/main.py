@@ -8,7 +8,7 @@ from random import choice
 from string import ascii_lowercase
 
 from config import load_config, save_config
-from eoepca_scim import EOEPCA_Scim
+from eoepca_scim import EOEPCA_Scim, ENDPOINT_AUTH_CLIENT_POST
 from custom_oidc import OIDCHandler
 from custom_uma import UMA_Handler
 ### INITIAL SETUP
@@ -26,14 +26,14 @@ if "client_id" not in g_config or "client_secret" not in g_config:
                                 redirectURIs = [""],
                                 logoutURI = "", 
                                 responseTypes = ["code","token","id_token"],
-                                scopes = ['openid', 'uma_protection', 'permission'], useUMA=1)
-    print("NEW CLIENT: ")
-    print(new_client["client_id"])
-    print(new_client["client_secret"])
+                                scopes = ['openid', 'uma_protection', 'permission'],
+                                token_endpoint_auth_method = ENDPOINT_AUTH_CLIENT_POST)
+    print("NEW CLIENT created with ID '"+new_client["client_id"]+"', since no client config was found on config.json")
 
     g_config["client_id"] = new_client["client_id"]
     g_config["client_secret"] = new_client["client_secret"]
     save_config("config/config.json", g_config)
+    print("New client saved to config!")
 
 oidc_client = OIDCHandler(g_wkh,
                             client_id = g_config["client_id"],
@@ -45,7 +45,12 @@ oidc_client = OIDCHandler(g_wkh,
 uma_handler = UMA_Handler(g_wkh, oidc_client, g_config["check_ssl_certs"])
 uma_handler.status()
 # Demo: register a new resource if it doesn't exist
-uma_handler.create("ADES Service", ["Authenticated"], description="", icon_uri="/ADES")
+try:
+    uma_handler.create("ADES Service", ["Authenticated"], description="", icon_uri="/ADES")
+except Exception as e:
+    if "already exists" in str(e):
+        print("Resource already existed, moving on")
+    else: raise e
 
 # Start reverse proxy for x endpoint
 app = Flask(__name__)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from eoepca_uma import rpt, resource
 from WellKnownHandler import TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT
+from typing import List
 
 class UMA_Handler:
 
