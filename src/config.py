@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from json import load
+from json import load, dump
 
 def load_config(config_path: str) -> dict:
     """
@@ -13,3 +13,11 @@ def load_config(config_path: str) -> dict:
         config = load(j)
 
     return config
+
+
+def save_config(config_path: str, data: dict):
+    """
+    Saves updated config file
+    """
+    with open(config_path) as j:
+        dump(data,j)
