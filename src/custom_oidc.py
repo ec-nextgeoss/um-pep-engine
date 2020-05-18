@@ -23,5 +23,12 @@ class OIDCHandler:
         headers = {"content-type": "application/x-www-form-urlencoded", 'cache-control': "no-cache"}
         payload = "grant_type=client_credentials&client_id="+self.client_id+"&client_secret="+self.client_secret+"&scope="+" ".join(self.scopes).replace(" ","%20")+"&redirect_uri="+self.redirect_uri
         response = post(token_endpoint, data=payload, headers=headers, verify = self.verify_ssl)
-        return response.json()["access_token"]
+        
+        try:
+            access_token = response.json()["access_token"]
+        except Exception as e:
+            print("Error while getting access_token: "+str(response.text))
+            exit(-1)
+        
+        return access_token
             
