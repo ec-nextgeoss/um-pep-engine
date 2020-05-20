@@ -8,5 +8,5 @@
     "check_ssl_certs": false,
     "use_threads": true,
     "debug_mode": true,
-    "resource_server_endpoint": "localhost:9000"
+    "resource_server_endpoint": "http://localhost:9000"
 }

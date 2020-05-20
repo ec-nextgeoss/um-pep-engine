@@ -42,18 +42,14 @@
 
 ## Table of Contents
 
-- [Steps to use this template](#steps-to-use-this-template)
 - [Table of Contents](#table-of-contents)
 - [About The Project](#about-the-project)
   - [Built With](#built-with)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-  - [Testing](#testing)
 - [Documentation](#documentation)
 - [Usage](#usage)
-  - [Running the template service](#running-the-template-service)
-  - [Upgrading Gradle Wrapper](#upgrading-gradle-wrapper)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -114,7 +110,11 @@ The component documentation can be found at https://eoepca.github.io/um-pep-engi
 
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+Use directly from docker with
+```sh
+docker run --add-host <auth-server-dns>:<your-ip> --publish <configured-port>:<configured-port> <image-id>
+```
+Where **<configured-port>** is the port configured inside the config.json file when creating the image, or edited afterwards.
 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
