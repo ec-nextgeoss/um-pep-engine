@@ -7,7 +7,7 @@ RUN pip install -r requirements.txt
 
 # Declare and expose service listening port
 # EXAMPLE PORT - PLEASE REPLACE WITH REAL ONES
-EXPOSE 8080/tcp
+EXPOSE 5566/tcp
 
 # Declare entrypoint of that exposed service
 ENTRYPOINT ["python3", "./main.py"]
