@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
   - name: pep
-    image: eoepca/um-pep-engine:travis_24
+    image: eoepca/um-pep-engine:latest
     imagePullPolicy: Always
     ports:
       - containerPort: 5566
