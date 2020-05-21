@@ -35,7 +35,8 @@
 - [Dependencies](#dependencies)
 - [Configuration](#configuration)
 - [Usage & functionality](#usage--functionality)
-- [Internal functionalitty](#internal-functionalitty)
+- [Developer documentation](#developer-documentation)
+  - [Demo functionality](#demo-functionality)
   - [Endpoints](#endpoints)
   - [Resources cache](#resources-cache)
 - [Roadmap](#roadmap)
@@ -137,7 +138,11 @@ Examples, given the example values of:
 | No RPT | pep.domain.com/pep/thing/with/large/path | Generate ticket for "/thing/with/large/path" | 401 + ticket |
 | Valid RPT for "/thing/with/large/path" | pep.domain.com/pep/thing/with/large/path | Request to remote.server.com/thing/with/large/path | Contents of remote.server.com/thing/with/large/path |
 
-## Internal functionalitty
+## Developer documentation
+
+### Demo functionality
+
+At the moment, the PEP will auto register a resource for the sake of demoing it's capabilities, using the `create` function of the UMA handler. This can be deleted if unwanted, or expanded to dinamically register resources. Note that the UMA library used allows for full control over resources (create, delete, etc) and could be used to help in that functionality expansion.
 
 ### Endpoints
 
