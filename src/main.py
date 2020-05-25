@@ -75,8 +75,14 @@ def resource_request(path):
         if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]):
             print("RPT valid, accesing ")
             # redirect to resource
-            return get(g_config["resource_server_endpoint"]+"/"+path).content
-        
+            try:
+                cont = get(g_config["resource_server_endpoint"]+"/"+path).content
+                return cont
+            except Exception as e:
+                print("Error while redirecting to resource: "+str(e))
+                response.status_code = 500
+                return response
+
         print("Invalid RPT!, sending ticket")
         # In any other case, we have an invalid RPT, so send a ticket.
         # Fallthrough intentional
@@ -94,7 +100,13 @@ def resource_request(path):
     else:
         print("No matched resource, passing through to resource server to handle")
         # In this case, the PEP doesn't have that resource handled, and just redirects to it.
-        return get(g_config["resource_server_endpoint"]+"/"+path).content
+        try:
+            cont = get(g_config["resource_server_endpoint"]+"/"+path).content
+            return cont
+        except Exception as e:
+            print("Error while redirecting to resource: "+str(e))
+            response.status_code = 500
+            return response
 
 # Start reverse proxy for x endpoint
 app.run(
