@@ -193,14 +193,14 @@ Project Link: [https://github.com/EOEPCA/um-pep-engine](https://github.com/EOEPC
 - README.md is based on [this template](https://github.com/othneildrew/Best-README-Template) by [Othneil Drew](https://github.com/othneildrew).
 
 
-[contributors-shield]: https://img.shields.io/github/contributors/EOEPCA/um-pep-enginesvg?style=flat-square
+[contributors-shield]: https://img.shields.io/github/contributors/EOEPCA/um-pep-engine.svg?style=flat-square
 [contributors-url]: https://github.com/EOEPCA/um-pep-engine/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/EOEPCA/um-pep-enginesvg?style=flat-square
+[forks-shield]: https://img.shields.io/github/forks/EOEPCA/um-pep-engine.svg?style=flat-square
 [forks-url]: https://github.com/EOEPCA/um-pep-engine/network/members
-[stars-shield]: https://img.shields.io/github/stars/EOEPCA/um-pep-enginesvg?style=flat-square
+[stars-shield]: https://img.shields.io/github/stars/EOEPCA/um-pep-engine.svg?style=flat-square
 [stars-url]: https://github.com/EOEPCA/um-pep-engine/stargazers
-[issues-shield]: https://img.shields.io/github/issues/EOEPCA/um-pep-enginesvg?style=flat-square
+[issues-shield]: https://img.shields.io/github/issues/EOEPCA/um-pep-engine.svg?style=flat-square
 [issues-url]: https://github.com/EOEPCA/um-pep-engine/issues
-[license-shield]: https://img.shields.io/github/license/EOEPCA/um-pep-enginesvg?style=flat-square
+[license-shield]: https://img.shields.io/github/license/EOEPCA/um-pep-engine.svg?style=flat-square
 [license-url]: https://github.com/EOEPCA/um-pep-engine/blob/master/LICENSE
-[build-shield]: https://www.travis-ci.com/EOEPCA/um-pep-enginesvg?branch=master
+[build-shield]: https://www.travis-ci.com/EOEPCA/um-pep-engine.svg?branch=master
