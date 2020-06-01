@@ -20,12 +20,12 @@ When a breakdown is necessary, a general overview of the building block can be g
 
 == Reverse Proxy Service
 === Overview and Purpose
-The main functionality of the PEP is to be able to stand between a client and the client's desired resource. By creating this setup, where only the PEP is visible to an external request, we effectively secure whatver is behind the PEP. The PEP will enforce any policy for a resource configured in the Authorization Server, following the UMA 2.0 standard.
+The main functionality of the PEP is to be able to stand between a client and the client's desired resource. By creating this setup, where only the PEP is visible to an external request, we effectively secure whatever is behind the PEP. The PEP will enforce any policy for a resource configured in the Authorization Server, following the UMA 2.0 standard.
 
 The PEP, when started, follows these steps:
 
 . Load the configuration from the config file
-. Parse the configuration from the Auth Server, using WellKnownHandler
+. Parse the configuration from the Auth Server (for example, the correct endpoints), using WellKnownHandler
 . If no client is configured at the config file, it will register itself, using the SCIM Client
 .. If the PEP had to register itself, then it will save the client's information on the config file, saving it in case a restart is needed.
 . Create OIDC and UMA clients
