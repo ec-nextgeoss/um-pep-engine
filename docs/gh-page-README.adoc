@@ -1,5 +1,5 @@
 = EOEPCA - {component-name}
-:component-name: <Template Service>
+:component-name: PEP Engine
 :component-github-name: template-svce
 
 EO Exploitation Platform Common Architecture (EOEPCA).

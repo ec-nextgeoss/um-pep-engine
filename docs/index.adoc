@@ -3,7 +3,7 @@
 :email: <Eoepca.SystemTeam@telespazio.com>
 :project: EOEPCA
 :project-name: EO Exploitation Platform Common Architecture
-:component-name: <Template Service>
+:component-name: PEP Engine
 :component-github-name: template-svce
 :doc-title: {component-name} Design Document
 :doc-num: {project}.SDD.xxx
