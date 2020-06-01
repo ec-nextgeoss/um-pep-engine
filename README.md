@@ -17,7 +17,7 @@
   <p align="center">
     Policy Enforcement Point for EOEPCA project
     <br />
-    <a href="https://eoepca.github.io/um-login-service/"><strong>Explore the docs »</strong></a>
+    <a href="https://eoepca.github.io/um-pep-engine/"><strong>Explore the docs »</strong></a>
     <br />
     <a href="https://github.com/EOEPCA/um-pep-engine/issues">Report Bug</a>
     ·
