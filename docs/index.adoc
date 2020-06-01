@@ -32,7 +32,6 @@
 :pdf-stylesdir: resources/themes
 :pdf-style: eoepca
 :media: screen
-:title-logo-image: image::logo.png[top=5%, align=right, pdfwidth=6.5in]
 
 = {doc-title}: {doc-num}
 
