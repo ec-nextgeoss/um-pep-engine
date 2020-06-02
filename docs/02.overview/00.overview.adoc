@@ -51,20 +51,6 @@ Examples follow, assuming the following conditions:
 
 To further clarify the flow the PEP uses, you can also take a look at the Data Flow in section <<Data flow>>
 
-=== Ticket generation
-
-The PEP generates appropiate tickets for access attempts to a resource, which can later be consumed and checked by the Authorization Server in order to give proper clearance to access that same resource.
-Ticket generation as per the UMAv2.0 standard, are only valid for that requested it and for that specific resource. 
-
-=== Resource protection & RPT validation
-
-The PEP when presented with an RPT in an `Authorization` HTTP header, will check the validity of this token for the requested resource. This token is only valid for a limited time, for a specific user, and for a specific resource. This makes attacks via copying an RPT extremely inneficient for an attacker.
-
-The PEP will only protect the resources that it recognizes as such. This means that, even without an RPT, the PEP will alllow a client to pass-through directly to the resource server if there is no identified resource that matches what the client is requesting.
-
-This behaviour, which is analogous to a blacklist approach (we only deny access a priori of a bunch of resources), can be easily switched to a "whitelist" with simple changes in the code.
-On the other hand, this baseline functionality is desirable to allow PEP-chaining, and allows for more complex workflows in the future.
-
 == External Interfaces
 
 === HTTP(S) (Reverse Proxy Listener)
@@ -105,8 +91,72 @@ The endpoints used for SCIM are:
 
 * AUTH_CLIENT_POST
 
-== Required resources TODO
+== Required resources
 
-== Static Architecture TODO
+[NOTE]
+.Content Description
+================================
+This section contains:
 
-== Use cases TODO
+* List of HW and SW required resources for the correct functioning of the building Block
+* References to open repositories (when applicable)
+
+================================
+
+=== Software
+
+The following Open-Source Software is required to support the deployment and integration of the Policy Enforcement Point:
+
+* EOEPCA's SCIM Client - https://github.com/EOEPCA/um-common-scim-client
+* EOEPCA's UMA Client - https://github.com/EOEPCA/um-common-uma-client
+* EOEPCA's Well Known Handler - https://github.com/EOEPCA/well-known-handler
+* Reverse Proxy for Python - Flask - https://github.com/pallets/flask
+
+== Static Architecture 
+
+[NOTE]
+.Content Description
+================================
+This section contains:
+
+* Diagram and description of the major logical components within the Building Block
+
+================================
+
+The Policy Enforcement Point at this moment is composed of only one component: The reverse proxy.
+
+The next section <<Design>> contains detailed descriptions and references needed to understand the intricacies of this component.
+
+== Use cases
+
+[NOTE]
+.Content Description
+================================
+This section contains:
+
+* Diagrams and definition of the use cases covered by this Building Block
+
+================================
+
+image::../images/PEPflow.png[top=5%, align=right, pdfwidth=6.5in]
+
+=== Self Authentication & Registration
+(Represented in the above graph by the request to Login Service in the section "PEP Authentication" )
+
+The PEP has an internal UMA Client used for alll the necessary UMA requests. This client is completely auto-managed even to the point of self-registration, so no pre-configuration is needed in order to run a PEP instance.
+
+=== Ticket generation
+
+(Represented in the above graph by the request to Login Service called "Request for ticket")
+
+The PEP generates appropiate tickets for access attempts to a resource, which can later be consumed and checked by the Authorization Server in order to give proper clearance to access that same resource.
+Ticket generation as per the UMAv2.0 standard, are only valid for that requested it and for that specific resource. 
+
+=== Resource protection & RPT validation
+
+The PEP when presented with an RPT in an `Authorization` HTTP header, will check the validity of this token for the requested resource. This token is only valid for a limited time, for a specific user, and for a specific resource. This makes attacks via copying an RPT extremely inneficient for an attacker.
+
+The PEP will only protect the resources that it recognizes as such. This means that, even without an RPT, the PEP will alllow a client to pass-through directly to the resource server if there is no identified resource that matches what the client is requesting.
+
+This behaviour, which is analogous to a blacklist approach (we only deny access a priori of a bunch of resources), can be easily switched to a "whitelist" with simple changes in the code.
+On the other hand, this baseline functionality is desirable to allow PEP-chaining, and allows for more complex workflows in the future.
