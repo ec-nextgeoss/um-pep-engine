@@ -4,8 +4,9 @@ import os, sys
 from os import path
 import socket
 import time
+import json
 
-
+#Generates environtment to simulate the resource server
 subprocess.check_call(["cp", '-r',  '../src/', './'])
 subprocess.check_call(["cp",  '../CLI/ADES', './'])
 os.system('mv ./src/* ./')
@@ -14,11 +15,13 @@ subprocess.check_call(["pip", "install",'-r', './requirements.txt'])
 os.system('nohup python3 -m http.server 9000 &')
 os.system('nohup python3 main.py &')
 
-
+#wait until the service is runing
 time.sleep(10)
 if path.exists('1'):
     os.system('rm -rf 1 2 3 4')
 
+#Request a resource without access_token
+#Returns a ticket to user for the token retrieval
 def get_ticket():
     ip=subprocess.check_output(['hostname','-i']).strip().decode()+':5566'
     if not path.exists('1'):
@@ -30,15 +33,17 @@ def get_ticket():
         for i in m:
             a =''.join(i)
             if 'ticket' in a:
-            
                 ticket = a[a.find('ticket')+7:-1]
     f.close()
     return ticket
-        
-def get_id_token():
+
+
+#Request authentication, a user must be specified, aswell as the client
+#Returns an id_token to use for the acces_token retrieval 
+def get_id_token(config):
     if not path.exists('2'):
         r = open("2", "w+")
-        pro=subprocess.Popen(['../CLI/authenticate-user.sh', '-S', '-a', 'demoexample.gluu.org','-i','a297e2ca-0f18-4740-a36e-7058f169a81b','-p','VtVukKiRvzf2a1coAKf72hPVg0iUypzKZfYZ5Z1A','-s','openid', '-u', 'alvlDemo', '-w', 'alvl', '-r', 'none'], stdout = r)
+        pro=subprocess.Popen(['../CLI/authenticate-user.sh', '-S', '-a', config['hostname'],'-i',config['client_id'],'-p',config['client_secret'],'-s','openid', '-u', config['username'], '-w', config['password'], '-r', 'none'], stdout = r)
         time.sleep(2)
     r.flush()
     r.close()
@@ -51,10 +56,11 @@ def get_id_token():
                 id_token = a[a.find('id_token')+11:a.find('token_type')-3]
     return id_token
 
-def get_acces_token(ticket, id_token):
+#Generates an acces token for the requested resource
+def get_acces_token(config, ticket, id_token):
     if not path.exists('3'):
         r = open("3", "w+")
-        pro=subprocess.Popen(['../CLI/get-rpt.sh', '-S', '-a', 'demoexample.gluu.org','-t',ticket,'-i','a297e2ca-0f18-4740-a36e-7058f169a81b','-p','VtVukKiRvzf2a1coAKf72hPVg0iUypzKZfYZ5Z1A','-s','openid','-c', id_token], stdout = r)
+        pro=subprocess.Popen(['../CLI/get-rpt.sh', '-S', '-a', config['hostname'],'-t',ticket,'-i',config['client_id'],'-p',config['client_secret'],'-s','openid','-c', id_token], stdout = r)
         time.sleep(2)
     r.flush()
     r.close()
@@ -66,6 +72,7 @@ def get_acces_token(ticket, id_token):
                 access_token = a[a.find('access_token')+15:a.find('token_type')-3]
     return access_token
 
+#Retreives the resource specifying the acces_token
 def get_resource(access_token):
     
     ip=subprocess.check_output(['hostname','-i']).strip().decode()+':5566'
@@ -83,18 +90,24 @@ def get_resource(access_token):
             
 
 def main():
+    with open('test_settings.json', 'r') as config:
+        config=config.read()
+    config = json.loads(config)
+
+    
+
     if not path.exists('1'):
         t=get_ticket()
-        i=get_id_token()
-        print('t: ')
+        print('ticket: ')
         print(t)
-        print('i: ')
+        i=get_id_token(config)
+        print('id_token: ')
         print(i)
-        a=get_acces_token(t, i)
-        print('a: ')
+        a=get_acces_token(config, t, i)
+        print('acces_token: ')
         print(a)
         r=get_resource(a)
-        print('r: ')
+        print('resource: ')
         print(r)
         if r:
             print('Success')
