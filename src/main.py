@@ -107,6 +107,83 @@ def resource_request(path):
             print("Error while redirecting to resource: "+str(e))
             response.status_code = 500
             return response
+            
+@app.route("/resources", methods=["GET"])
+def getResourceList():
+    print("Retrieving all registed resources...")
+    resources = uma_handler.get_all_resources()
+    rpt = request.headers.get('Authorization')
+    rpt = rpt.replace("Bearer ","").strip()
+    response = Response()
+    if rpt:
+        #Token was found, check for validation
+        for rID in resources:
+            scopes = uma_handler.get_resource_scopes(rID)
+            if uma_handler.validate_rpt(rpt, [{"resource_id": rID, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]):
+                r = uma_handler.get_resource(rID)
+                entry = {'_id': r["_id"], 'name': r["name"]}
+                resourceList.append(entry)
+        return resourceList
+    
+@app.route("/resources/<resource_id>", methods=["GET", "PUT", "POST", "DELETE"])
+def resource_operation(resource_id):
+    print("Processing " + request.method + " resource request...")
+    rpt = request.headers.get('Authorization')
+    # Get resource scopes from resource_id
+    scopes = uma_handler.get_resource_scopes(resource_id)
+    response = Response()
+    if rpt:
+        #Token was found, check for validation
+        rpt = rpt.replace("Bearer ","").strip()
+        if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]):
+            print("RPT valid, proceding...")
+            try:
+                #retrieve resource
+                if request.method == "GET":
+                    return uma_handler.get_resource(resource_id)
+                #add resource
+                else if request.method == "PUT":
+                    if request.is_json():
+                        data = request.get_json()
+                        if data.get("name") and data.get("resource_scopes"):
+                            uma_handler.create(data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
+                #update resource
+                else if request.method == "POST":
+                    if request.is_json():
+                        data = request.get_json()
+                        if data.get("name") and data.get("resource_scopes"):
+                            uma_handler.update(resource_id, data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
+                #delete resource
+                else if request.method == "DELETE":
+                    uma_handler.delete(resource_id)
+            except Exception as e:
+                print("Error while redirecting to resource: "+str(e))
+                response.status_code = 500
+                return response
+        
+    print("No auth token, or auth token is invalid")
+    #Scopes have already been queried at this time, so if they are not None, we know the resource has been found. This is to avoid a second query.
+    if scopes is not None:
+        print("Matched resource: "+str(resource_id))
+        # Generate ticket if token is not present
+        ticket = uma_handler.request_access_ticket([{"resource_id": resource_id, "resource_scopes": scopes }])
+
+        # Return ticket
+        response.headers["WWW-Authenticate"] = "UMA realm="+g_config["realm"]+",as_uri="+g_config["auth_server_url"]+",ticket="+ticket
+        response.status_code = 401 # Answer with "Unauthorized" as per the standard spec.
+        return response
+    else:
+        print("No matched resource, passing through to resource server to handle")
+        # In this case, the PEP doesn't have that resource handled, and just redirects to it.
+        try:
+            cont = get(g_config["resource_server_endpoint"]+"/"+path).content
+            return cont
+        except Exception as e:
+            print("Error while redirecting to resource: "+str(e))
+            response.status_code = 500
+            return response
+    
+
 
 # Start reverse proxy for x endpoint
 app.run(
