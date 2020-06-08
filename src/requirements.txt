@@ -1,3 +1,4 @@
+eoepca-oidc
 eoepca-scim==2.5.0
 eoepca-uma==0.2.1
 WellKnownHandler==0.2.0

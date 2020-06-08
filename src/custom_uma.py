@@ -64,7 +64,8 @@ class UMA_Handler:
         resource_reg_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
         for r in self.registered_resources:
             data = resource.read(pat, resource_reg_endpoint, r, self.verify)
-            if "icon_uri" in data and data["icon_uri"] == icon_uri:
+            #if "icon_uri" in data and data["icon_uri"] == icon_uri:
+            if "icon_uri" in data: #Default behavior for demo purposes
                 return data["_id"], data["resource_scopes"]
         
         return None, None
