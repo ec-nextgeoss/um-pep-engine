@@ -6,6 +6,7 @@ from flask import Flask, request, Response
 from random import choice
 from string import ascii_lowercase
 from requests import get
+import json
 
 from config import load_config, save_config
 from eoepca_scim import EOEPCA_Scim, ENDPOINT_AUTH_CLIENT_POST
@@ -60,7 +61,7 @@ app.secret_key = ''.join(choice(ascii_lowercase) for i in range(30)) # Random ke
 
 
 @app.route(g_config["proxy_endpoint"], defaults={'path': ''})
-@app.route(g_config["proxy_endpoint"]+"/<path:path>", methods=["GET"])
+@app.route(g_config["proxy_endpoint"]+"/<path:path>", methods=["GET","POST"])
 def resource_request(path):
     # Check for token
     print("Processing path: '"+path+"'")
@@ -76,11 +77,26 @@ def resource_request(path):
             print("RPT valid, accesing ")
             # redirect to resource
             try:
-                cont = get(g_config["resource_server_endpoint"]+"/"+path).content
-                return cont
+                if request.method == 'POST':
+                    if request.headers.get('Content-Type') == "application/json":
+                        req_data = json.dumps(request.json)
+                    else:
+                        req_data = request.data
+                    res = post(g_config["resource_server_endpoint"]+"/"+path, headers=request.headers, data=req_data, stream=False)
+                    excluded_headers = ['transfer-encoding']
+                    headers = [(name, value) for (name, value) in     res.raw.headers.items() if name.lower() not in excluded_headers]
+                    response = Response(res.content, res.status_code,headers)
+                    return response
+                elif request.method == 'GET':
+                    res = get(g_config["resource_server_endpoint"]+"/"+path, headers=request.headers, stream=False)
+                    excluded_headers = ['transfer-encoding']
+                    headers = [(name, value) for (name, value) in     res.raw.headers.items() if name.lower() not in excluded_headers]
+                    response = Response(res.content, res.status_code,headers)
+                    return response
             except Exception as e:
                 print("Error while redirecting to resource: "+str(e))
                 response.status_code = 500
+                response.content = "Error while redirecting to resource: "+str(e)
                 return response
 
         print("Invalid RPT!, sending ticket")
