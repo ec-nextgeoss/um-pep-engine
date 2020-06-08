@@ -142,19 +142,19 @@ def resource_operation(resource_id):
                 if request.method == "GET":
                     return uma_handler.get_resource(resource_id)
                 #add resource
-                else if request.method == "PUT":
+                elif request.method == "PUT":
                     if request.is_json():
                         data = request.get_json()
                         if data.get("name") and data.get("resource_scopes"):
                             uma_handler.create(data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
                 #update resource
-                else if request.method == "POST":
+                elif request.method == "POST":
                     if request.is_json():
                         data = request.get_json()
                         if data.get("name") and data.get("resource_scopes"):
                             uma_handler.update(resource_id, data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
                 #delete resource
-                else if request.method == "DELETE":
+                elif request.method == "DELETE":
                     uma_handler.delete(resource_id)
             except Exception as e:
                 print("Error while redirecting to resource: "+str(e))
