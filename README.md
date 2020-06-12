@@ -144,6 +144,13 @@ Examples, given the example values of:
 
 At the moment, the PEP will auto register a resource for the sake of demoing it's capabilities, using the `create` function of the UMA handler. This can be deleted if unwanted, or expanded to dinamically register resources. Note that the UMA library used allows for full control over resources (create, delete, etc) and could be used to help in that functionality expansion.
 
+### Test functionality
+
+In order to test the PEP engine at the moment first you have reach this prerequisites:
+
+- Register a client and a user inside the gluu instance and update the test_settings.json
+- Disable current UMA Policies and set inside JSONConfig > OxAuth umaGrantAccessIfNoPolicies to true
+
 ### Endpoints
 
 The PEP uses the following endpoints from a "Well Known Handler", which parses the Auth server's "well-known" endpoints:
