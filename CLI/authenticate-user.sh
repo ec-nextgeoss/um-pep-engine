@@ -85,4 +85,4 @@ fi
 TOKEN_ENDPOINT=$(python3 -c 'from WellKnownHandler import WellKnownHandler, TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT; h = WellKnownHandler("'"$HTTP""$AS_ENDPOINT"'", secure=False); print(h.get(TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT))')
 SCOPES=${SCOPES// /$SPACE}
 
-curl -k -v -XPOST "$TOKEN_ENDPOINT" -H "cache-control: no-cache" -d "redirect_uri=$REDIRECT_URI&scope=$SCOPES&grant_type=password&username=$USER&password=$U_PWD&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET"
+curl -k -v -XPOST "$TOKEN_ENDPOINT" -H "cache-control: no-cache" -d "redirect_uri=$REDIRECT_URI&scope=$SCOPES&grant_type=client_credentials&username=$USER&password=$U_PWD&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET"

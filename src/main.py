@@ -113,9 +113,9 @@ def getResourceList():
     print("Retrieving all registed resources...")
     resources = uma_handler.get_all_resources()
     rpt = request.headers.get('Authorization')
-    rpt = rpt.replace("Bearer ","").strip()
     response = Response()
     if rpt:
+        rpt = rpt.replace("Bearer ","").strip()
         #Token was found, check for validation
         for rID in resources:
             scopes = uma_handler.get_resource_scopes(rID)
@@ -124,6 +124,9 @@ def getResourceList():
                 entry = {'_id': r["_id"], 'name': r["name"]}
                 resourceList.append(entry)
         return resourceList
+    print("No auth token, or auth token is invalid")
+    response.status_code = 500
+    return response
     
 @app.route("/resources/<resource_id>", methods=["GET", "PUT", "POST", "DELETE"])
 def resource_operation(resource_id):
@@ -173,15 +176,9 @@ def resource_operation(resource_id):
         response.status_code = 401 # Answer with "Unauthorized" as per the standard spec.
         return response
     else:
-        print("No matched resource, passing through to resource server to handle")
-        # In this case, the PEP doesn't have that resource handled, and just redirects to it.
-        try:
-            cont = get(g_config["resource_server_endpoint"]+"/"+path).content
-            return cont
-        except Exception as e:
-            print("Error while redirecting to resource: "+str(e))
-            response.status_code = 500
-            return response
+        print("Error, resource not found!")
+        response.status_code = 500
+        return response
     
 
 
