@@ -5,7 +5,7 @@ from WellKnownHandler import WellKnownHandler
 from flask import Flask, request, Response
 from random import choice
 from string import ascii_lowercase
-from requests import get
+from requests import get, post, put, delete
 import json
 
 from config import load_config, save_config
@@ -13,6 +13,9 @@ from eoepca_scim import EOEPCA_Scim, ENDPOINT_AUTH_CLIENT_POST
 from custom_oidc import OIDCHandler
 from custom_uma import UMA_Handler
 import os
+import sys
+import traceback
+
 ### INITIAL SETUP
 
 env_vars = [
@@ -96,15 +99,41 @@ app = Flask(__name__)
 app.secret_key = ''.join(choice(ascii_lowercase) for i in range(30)) # Random key
 
 
+def proxy_request(request):
+    try:
+        if request.method == 'POST':
+            res = post(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=request.headers, data=request.data, stream=False)           
+        elif request.method == 'GET':
+            res = get(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=request.headers, stream=False)
+        elif request.method == 'PUT':
+            res = put(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=request.headers, data=request.data, stream=False)           
+        elif request.method == 'DELETE':
+            res = delete(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=request.headers, stream=False)
+        else:
+            response = Response()
+            response.status_code = 501
+            return response
+        excluded_headers = ['transfer-encoding']
+        headers = [(name, value) for (name, value) in     res.raw.headers.items() if name.lower() not in excluded_headers]
+        response = Response(res.content, res.status_code, headers)
+        return response
+    except Exception as e:
+        response = Response()
+        print("Error while redirecting to resource: "+ traceback.format_exc(),file=sys.stderr)
+        response.status_code = 500
+        response.content = "Error while redirecting to resource: "+str(e)
+        return response
+
+
 @app.route(g_config["proxy_endpoint"], defaults={'path': ''})
-@app.route(g_config["proxy_endpoint"]+"/<path:path>", methods=["GET","POST"])
+@app.route(g_config["proxy_endpoint"]+"/<path:path>", methods=["GET","POST","PUT","DELETE"])
 def resource_request(path):
     # Check for token
     print("Processing path: '"+path+"'")
     rpt = request.headers.get('Authorization')
     # Get resource
     resource_id, scopes = uma_handler.resource_exists("/"+path) # TODO: Request all scopes? How can a user set custom scopes?
-    response = Response()
+
     if rpt:
         print("Token found: "+rpt)
         rpt = rpt.replace("Bearer ","").strip()
@@ -112,39 +141,16 @@ def resource_request(path):
         if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], int(g_config["s_margin_rpt_valid"])):
             print("RPT valid, accesing ")
             # redirect to resource
-            try:
-                if request.method == 'POST':
-                    if request.headers.get('Content-Type') == "application/json":
-                        req_data = json.dumps(request.json)
-                    else:
-                        req_data = request.data
-                    res = post(g_config["resource_server_endpoint"]+"/"+path, headers=request.headers, data=req_data, stream=False)
-                    excluded_headers = ['transfer-encoding']
-                    headers = [(name, value) for (name, value) in     res.raw.headers.items() if name.lower() not in excluded_headers]
-                    response = Response(res.content, res.status_code,headers)
-                    return response
-                elif request.method == 'GET':
-                    res = get(g_config["resource_server_endpoint"]+"/"+path, headers=request.headers, stream=False)
-                    excluded_headers = ['transfer-encoding']
-                    headers = [(name, value) for (name, value) in     res.raw.headers.items() if name.lower() not in excluded_headers]
-                    response = Response(res.content, res.status_code,headers)
-                    return response
-            except Exception as e:
-                print("Error while redirecting to resource: "+str(e))
-                response.status_code = 500
-                response.content = "Error while redirecting to resource: "+str(e)
-                return response
-
+            return proxy_request(request)
         print("Invalid RPT!, sending ticket")
         # In any other case, we have an invalid RPT, so send a ticket.
         # Fallthrough intentional
-
     print("No auth token, or auth token is invalid")
+    response = Response()
     if resource_id is not None:
         print("Matched resource: "+str(resource_id))
         # Generate ticket if token is not present
         ticket = uma_handler.request_access_ticket([{"resource_id": resource_id, "resource_scopes": scopes }])
-
         # Return ticket
         response.headers["WWW-Authenticate"] = "UMA realm="+g_config["realm"]+",as_uri="+g_config["auth_server_url"]+",ticket="+ticket
         response.status_code = 401 # Answer with "Unauthorized" as per the standard spec.

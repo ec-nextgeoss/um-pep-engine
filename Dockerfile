@@ -1,12 +1,14 @@
 # Base container
 FROM python:3.6
 
-# Add requirements, code
-COPY src/ /
+COPY src/requirements.txt /
+
 RUN pip install -r requirements.txt
 
+# Add requirements, code
+COPY src/ /
+
 # Declare and expose service listening port
-# EXAMPLE PORT - PLEASE REPLACE WITH REAL ONES
 EXPOSE 5566/tcp
 
 # Declare entrypoint of that exposed service
