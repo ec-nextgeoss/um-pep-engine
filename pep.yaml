@@ -6,11 +6,7 @@ spec:
   containers:
   - name: pep
     image: eoepca/um-pep-engine:latest
-    imagePullPolicy: Always
+    imagePullPolicy: IfNotPresent
     ports:
       - containerPort: 5566
-  hostAliases:
-  - ip: "172.17.0.2"
-    hostnames:
-    - "demoexample.gluu.org"
 
