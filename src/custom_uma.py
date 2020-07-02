@@ -2,6 +2,7 @@
 from eoepca_uma import rpt, resource
 from WellKnownHandler import TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT, KEY_UMA_V2_PERMISSION_ENDPOINT, KEY_UMA_V2_INTROSPECTION_ENDPOINT
 from typing import List
+import pymongo
 
 class UMA_Handler:
 
@@ -27,8 +28,42 @@ class UMA_Handler:
         pat = self.oidch.get_new_pat()
         new_resource_id = resource.create(pat, resource_registration_endpoint, name, scopes, description=description, icon_uri= icon_uri, secure = self.verify)
         print("Created resource '"+name+"' with ID :"+new_resource_id)
-
+        # Register resources inside the dbs
+        a=self.insertInMongo(name,new_resource_id)
+        if a: print('Resource saved in DB succesfully')
+        
         self.add_resource_to_cache(new_resource_id)
+
+    # Usage of Python library for query mongodb instance
+    def insertInMongo(self,name,new_resource_id):
+        '''
+        Check the existence of the resource to be registered on the database
+            If alredy registered will return None
+            If not registered will add it and return the query result
+        '''
+        myclient = pymongo.MongoClient('localhost', 27017)
+        db = myclient["resource_db"]
+        col = None
+        dblist = myclient.list_database_names()
+        # Check if the database alredy exists
+        if "resource_db" in dblist:
+            print("The database exists.")
+            col = db['resources']
+            # Check if the resource is alredy registered in the collection
+            for x in col.find({},{ "_id": 0, "resource_id": 1, "name": 1 }):
+                if new_resource_id in str(x):
+                    print('Resource alredy registered in the database')
+                    return None
+            # Add the resource since it doesn't exist on the database 
+            myres = { "resource_id": new_resource_id, "name": name }
+            x = col.insert_one(myres)
+            return x
+        else:
+            # In case the database doesn't exist it will create it with the resource
+            col = db['resources']
+            myres = { "resource_id": new_resource_id, "name": name }
+            x = col.insert_one(myres)
+            return x
 
     def validate_rpt(self, user_rpt: str, resources: List[dict], margin_time_rpt_valid: float, ) -> bool:
         """
