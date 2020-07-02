@@ -138,7 +138,7 @@ This section contains:
 
 ================================
 
-image::../images/PEPflow.png[top=5%, align=right, pdfwidth=6.5in]
+image::../images/PEPFlow2.png[top=5%, align=right, pdfwidth=6.5in]
 
 === Self Authentication & Registration
 (Represented in the above graph by the request to Login Service in the section "PEP Authentication" )
@@ -160,3 +160,10 @@ The PEP will only protect the resources that it recognizes as such. This means t
 
 This behaviour, which is analogous to a blacklist approach (we only deny access a priori of a bunch of resources), can be easily switched to a "whitelist" with simple changes in the code.
 On the other hand, this baseline functionality is desirable to allow PEP-chaining, and allows for more complex workflows in the future.
+
+
+=== Request Forwarding with JWT header
+ 
+After validating the RPT we proceed to make a call to the introspection endpoint (/oxauth/restv1/rpt/status) passing through parameters the RPT and the pat. Returning a JSON with the information for that token, called claims, where the user name can appear, for example.
+
+Then we proceed to generate this JSON to the format of JWT using an asymmetric cryptography, in this case using RSA with a private key. And then pass this JWT as a header in the request to the resource server.
