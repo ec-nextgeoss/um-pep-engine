@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 from WellKnownHandler import WellKnownHandler
+from WellKnownHandler import TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT, KEY_UMA_V2_PERMISSION_ENDPOINT, KEY_UMA_V2_INTROSPECTION_ENDPOINT
 
 from flask import Flask, request, Response
+from werkzeug.datastructures import Headers
 from random import choice
 from string import ascii_lowercase
 from requests import get, post, put, delete
@@ -11,11 +13,16 @@ import json
 from config import load_config, save_config
 from eoepca_scim import EOEPCA_Scim, ENDPOINT_AUTH_CLIENT_POST
 from custom_oidc import OIDCHandler
-from custom_uma import UMA_Handler
+from custom_uma import UMA_Handler, resource
+from custom_uma import rpt as class_rpt
 import os
 import sys
 import traceback
 
+from jwkest.jws import JWS
+from jwkest.jwk import RSAKey, import_rsa_key_from_file, load_jwks_from_url, import_rsa_key
+from jwkest.jwk import load_jwks
+from Crypto.PublicKey import RSA
 ### INITIAL SETUP
 
 env_vars = [
@@ -98,17 +105,52 @@ except Exception as e:
 app = Flask(__name__)
 app.secret_key = ''.join(choice(ascii_lowercase) for i in range(30)) # Random key
 
+def generateRSAKeyPair():
+    _rsakey = RSA.generate(2048)
+    private_key = _rsakey.exportKey()
+    public_key = _rsakey.publickey().exportKey()
 
-def proxy_request(request):
+    file_out = open("config/private.pem", "wb+")
+    file_out.write(private_key)
+    file_out.close()
+
+    file_out = open("config/public.pem", "wb+")
+    file_out.write(public_key)
+    file_out.close()
+
+    return private_key, public_key
+
+private_key, public_key = generateRSAKeyPair()
+
+def create_jwt(payload, p_key):
+    rsajwk = RSAKey(kid="RSA1", key=import_rsa_key(p_key))
+    jws = JWS(payload, alg="RS256")
+    return jws.sign_compact(keys=[rsajwk])
+
+def split_headers(headers):
+    headers_tmp = headers.splitlines()
+    d = {}
+
+    for h in headers_tmp:
+        h = h.split(': ')
+        if len(h) < 2:
+            continue
+        field=h[0]
+        value= h[1]
+        d[field] = value
+
+    return d
+
+def proxy_request(request, new_header):
     try:
         if request.method == 'POST':
-            res = post(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=request.headers, data=request.data, stream=False)           
+            res = post(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, data=request.data, stream=False)           
         elif request.method == 'GET':
-            res = get(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=request.headers, stream=False)
+            res = get(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, stream=False)
         elif request.method == 'PUT':
-            res = put(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=request.headers, data=request.data, stream=False)           
+            res = put(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, data=request.data, stream=False)           
         elif request.method == 'DELETE':
-            res = delete(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=request.headers, stream=False)
+            res = delete(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, stream=False)
         else:
             response = Response()
             response.status_code = 501
@@ -140,8 +182,19 @@ def resource_request(path):
         # Validate for a specific resource
         if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], int(g_config["s_margin_rpt_valid"])):
             print("RPT valid, accesing ")
+            introspection_endpoint=g_wkh.get(TYPE_UMA_V2, KEY_UMA_V2_INTROSPECTION_ENDPOINT)
+            pat = oidc_client.get_new_pat()
+            rpt_class = class_rpt.introspect(rpt=rpt, pat=pat, introspection_endpoint=introspection_endpoint, secure=False)
+            jwt_rpt_response = create_jwt(rpt_class, private_key)
+
+            headers_splitted = split_headers(str(request.headers))
+            headers_splitted['Authorization'] = "Bearer "+str(jwt_rpt_response)
+
+            new_header = Headers()
+            for key, value in headers_splitted.items():
+                new_header.add(key, value)
             # redirect to resource
-            return proxy_request(request)
+            return proxy_request(request, new_header)
         print("Invalid RPT!, sending ticket")
         # In any other case, we have an invalid RPT, so send a ticket.
         # Fallthrough intentional
