@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 from eoepca_uma import rpt, resource
+from custom_mongo import Mongo_Handler
 from WellKnownHandler import TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT, KEY_UMA_V2_PERMISSION_ENDPOINT, KEY_UMA_V2_INTROSPECTION_ENDPOINT
 from typing import List
+import pymongo
 
 class UMA_Handler:
 
@@ -27,8 +29,14 @@ class UMA_Handler:
         pat = self.oidch.get_new_pat()
         new_resource_id = resource.create(pat, resource_registration_endpoint, name, scopes, description=description, icon_uri= icon_uri, secure = self.verify)
         print("Created resource '"+name+"' with ID :"+new_resource_id)
-
+        # Register resources inside the dbs
+        custom_mongo = Mongo_Handler()
+        a=custom_mongo.insert_in_mongo(name, new_resource_id, icon_uri)
+        if a: print('Resource saved in DB succesfully')
+        
         self.add_resource_to_cache(new_resource_id)
+
+    # Usage of Python library for query mongodb instance
 
     def validate_rpt(self, user_rpt: str, resources: List[dict], margin_time_rpt_valid: float, ) -> bool:
         """

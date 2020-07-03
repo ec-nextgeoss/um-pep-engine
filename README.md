@@ -168,6 +168,9 @@ This can be expanded to a better database, by replacing the functions `update_re
 
 --------
 
+When a resource is registered, the name and id are stored as a document into a Mongodb database as a sidecar container sharing data through a persistent storage volume.
+The pod runs the pep-engine image and the mongo image exposing the default mongo port (27017) where communicates the service and keeps it alive for the pep-engine container to query the database. 
+
 ## Roadmap
 
 See the [open issues](https://github.com/EOEPCA/um-pep-engine/issues) for a list of proposed features (and known issues).
