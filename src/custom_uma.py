@@ -74,7 +74,7 @@ class UMA_Handler:
             data = resource.read(pat, resource_reg_endpoint, r, self.verify)
             #if "icon_uri" in data and data["icon_uri"] == icon_uri:
             if "icon_uri" in data: #Default behavior for demo purposes
-                return data["_id"], data["resource_scopes"]
+                return  data["resource_scopes"]
         
         return None, None
        
