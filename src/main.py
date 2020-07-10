@@ -6,11 +6,15 @@ from flask import Flask, request, Response
 from random import choice
 from string import ascii_lowercase
 from requests import get
+import json
 
 from config import load_config, save_config
 from eoepca_scim import EOEPCA_Scim, ENDPOINT_AUTH_CLIENT_POST
 from custom_oidc import OIDCHandler
 from custom_uma import UMA_Handler
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 ### INITIAL SETUP
 # Global config objects
 g_config = load_config("config/config.json")
@@ -24,7 +28,8 @@ if "client_id" not in g_config or "client_secret" not in g_config:
     scim_client = EOEPCA_Scim(g_config["auth_server_url"])
     new_client = scim_client.registerClient("PEP Dynamic Client",
                                 grantTypes = ["client_credentials"],
-                                redirectURIs = [""],
+                                #TODO check if needed
+                                redirectURIs = ["https://test.com"],
                                 logoutURI = "", 
                                 responseTypes = ["code","token","id_token"],
                                 scopes = ['openid', 'uma_protection', 'permission'],
@@ -41,7 +46,8 @@ else:
 oidc_client = OIDCHandler(g_wkh,
                             client_id = g_config["client_id"],
                             client_secret = g_config["client_secret"],
-                            redirect_uri = "",
+                            #TODO check if needed
+                            redirect_uri = "https://test.com",
                             scopes = ['openid', 'uma_protection', 'permission'],
                             verify_ssl = g_config["check_ssl_certs"])
 
@@ -114,16 +120,29 @@ def getResourceList():
     resources = uma_handler.get_all_resources()
     rpt = request.headers.get('Authorization')
     response = Response()
+    resourceListToReturn = []
+    resourceListToValidate = []
     if rpt:
+        print("Token found: " + rpt)
         rpt = rpt.replace("Bearer ","").strip()
         #Token was found, check for validation
         for rID in resources:
+            #In here we will use the loop for 2 goals: build the resource list to validate (all of them) and the potential reply list of resources, to avoid a second loop
             scopes = uma_handler.get_resource_scopes(rID)
-            if uma_handler.validate_rpt(rpt, [{"resource_id": rID, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]):
-                r = uma_handler.get_resource(rID)
-                entry = {'_id': r["_id"], 'name': r["name"]}
-                resourceList.append(entry)
-        return resourceList
+            resourceListToValidate.append({"resource_id": rID, "resource_scopes": scopes })
+            r = uma_handler.get_resource(rID)
+            entry = {'_id': r["_id"], 'name': r["name"]}
+            resourceListToReturn.append(entry)
+        if uma_handler.validate_rpt(rpt, resourceListToValidate, g_config["s_margin_rpt_valid"]):
+            return json.dumps(resourceListToReturn)
+    if resourceListToValidate:
+        # Generate ticket if token is not present
+        ticket = uma_handler.request_access_ticket(resourceListToValidate)
+
+        # Return ticket
+        response.headers["WWW-Authenticate"] = "UMA realm="+g_config["realm"]+",as_uri="+g_config["auth_server_url"]+",ticket="+ticket
+        response.status_code = 401 # Answer with "Unauthorized" as per the standard spec.
+        return response
     print("No auth token, or auth token is invalid")
     response.status_code = 500
     return response
@@ -137,6 +156,7 @@ def resource_operation(resource_id):
     response = Response()
     if rpt:
         #Token was found, check for validation
+        print("Found rpt in request, validating...")
         rpt = rpt.replace("Bearer ","").strip()
         if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]):
             print("RPT valid, proceding...")
