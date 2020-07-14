@@ -9,7 +9,7 @@ jobs:
   include:
     - stage: Testing
       install: pip3 install -r src/requirements.txt
-      install: pip3 install ./
+      script: pip3 install ./
       script: python3 -m unittest src/test/test.py
     
     - stage: container creation and publishing
@@ -34,5 +34,5 @@ notifications:
 #    recipients:
 #      - a.person@acme.com
 #      - a.n.other@acme.com
-  on_success: change
-  on_failure: always
+  on_success: always
+  on_failure: never
