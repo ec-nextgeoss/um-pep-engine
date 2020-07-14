@@ -135,6 +135,7 @@ def getResourceList():
             resourceListToReturn.append(entry)
         if uma_handler.validate_rpt(rpt, resourceListToValidate, g_config["s_margin_rpt_valid"]):
             return json.dumps(resourceListToReturn)
+    print("No auth token, or auth token is invalid")
     if resourceListToValidate:
         # Generate ticket if token is not present
         ticket = uma_handler.request_access_ticket(resourceListToValidate)
@@ -143,17 +144,28 @@ def getResourceList():
         response.headers["WWW-Authenticate"] = "UMA realm="+g_config["realm"]+",as_uri="+g_config["auth_server_url"]+",ticket="+ticket
         response.status_code = 401 # Answer with "Unauthorized" as per the standard spec.
         return response
-    print("No auth token, or auth token is invalid")
     response.status_code = 500
     return response
-    
+
 @app.route("/resources/<resource_id>", methods=["GET", "PUT", "POST", "DELETE"])
 def resource_operation(resource_id):
     print("Processing " + request.method + " resource request...")
+    response = Response()
+
+    #add resource is outside of rpt validation, as it only requires a client pat to register a new resource
+    if request.method == "POST":
+        if request.is_json:
+            data = request.get_json()
+            if data.get("name") and data.get("resource_scopes") and data.get("name") == resource_id:
+                return uma_handler.create(data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
+            else:
+                response.status_code = 500
+                response.headers["Error"] = "Invalid data or incorrect resource name passed on URL called for resource creation!"
+                return response
+
     rpt = request.headers.get('Authorization')
     # Get resource scopes from resource_id
     scopes = uma_handler.get_resource_scopes(resource_id)
-    response = Response()
     if rpt:
         #Token was found, check for validation
         print("Found rpt in request, validating...")
@@ -164,21 +176,18 @@ def resource_operation(resource_id):
                 #retrieve resource
                 if request.method == "GET":
                     return uma_handler.get_resource(resource_id)
-                #add resource
                 elif request.method == "PUT":
-                    if request.is_json():
-                        data = request.get_json()
-                        if data.get("name") and data.get("resource_scopes"):
-                            uma_handler.create(data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
-                #update resource
-                elif request.method == "POST":
-                    if request.is_json():
+                    if request.is_json:
                         data = request.get_json()
                         if data.get("name") and data.get("resource_scopes"):
                             uma_handler.update(resource_id, data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
+                            response.status_code = 200
+                            return response
                 #delete resource
                 elif request.method == "DELETE":
                     uma_handler.delete(resource_id)
+                    response.status_code = 204
+                    return response
             except Exception as e:
                 print("Error while redirecting to resource: "+str(e))
                 response.status_code = 500
