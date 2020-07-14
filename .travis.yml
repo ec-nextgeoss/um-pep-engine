@@ -1,11 +1,5 @@
 language: python
 python: 3.6.9
-jobs:
-  include:
-    - stage: Testing
-      install: pip install -r src/requirements.txt
-      install: pip3 install ./
-      script: python3 -m unittest src/test/test.py
 env:
   DOCKER_COMPOSE_VERSION: 1.25.4
 services:
@@ -13,6 +7,11 @@ services:
 
 jobs:
   include:
+    - stage: Testing
+      install: pip install -r eoepca_uma/requirements.txt
+      install: pip3 install ./
+      script: python3 -m unittest src/test/test.py
+    
     - stage: container creation and publishing
       install: skip
       script: travis/containerCreation.sh um-pep-engine
