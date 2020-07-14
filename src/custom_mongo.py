@@ -56,20 +56,20 @@ class Mongo_Handler:
         # Check if the database alredy exists
         if "resource_db" in dblist:
             col = self.db['resources']
-            # Check if the resource is alredy registered in the collection
-            if self.resource_exists(resource_id):
-                return None
-            # Add the resource since it doesn't exist on the database 
             myres = { "resource_id": resource_id, "name": name, "reverse_match_url": reverse_match_url }
-            x = col.insert_one(myres)
+            # Check if the resource is alredy registered in the collection
+            x=None
+            if self.resource_exists(resource_id):
+                x= self.update_resource(myres)
+            # Add the resource since it doesn't exist on the database 
+            else:
+                x = col.insert_one(myres)
             return x
         else:
             col = self.db['resources']
             myres = { "resource_id": resource_id, "name": name, "reverse_match_url": reverse_match_url }
             x = col.insert_one(myres)
             return x
-
-        
 
     def delete_resource(self, resource_id):
         '''
@@ -80,3 +80,14 @@ class Mongo_Handler:
             col = self.db['resources']  
             myquery = { "resource_id": resource_id }
             a= col.delete_one(myquery)
+    
+    def update_resource(self, dict_data):
+        '''
+        Find the resource in the database by id, add or modify the changed values for the resource
+        '''
+        id=dict_data['resource_id']
+        col = self.db['resources']
+        myquery= {'resource_id': id}
+        new_val= {"$set": dict_data}
+        x = col.update_many(myquery, new_val)
+        return
