@@ -20,9 +20,7 @@ with open("../src/config/config.json") as j:
     g_config = json.load(j)
 
 wkh = WellKnownHandler(g_config["auth_server_url"], secure=False)
-__SCIM_USERS_ENDPOINT = wkh.get(TYPE_SCIM, KEY_SCIM_USER_ENDPOINT)
 __TOKEN_ENDPOINT = wkh.get(TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT)
-__REGISTER_ENDPOINT = wkh.get(TYPE_OIDC, KEY_OIDC_REGISTRATION_ENDPOINT)
 
 #Generate ID Token
 _rsakey = RSA.generate(2048)
@@ -49,8 +47,8 @@ _jws = JWS(_payload, alg="RS256")
 jwt = _jws.sign_compact(keys=[_rsajwk])
 
 #payload = { "resource_scopes":[ "Authenticated"], "icon_uri":"/testResourcePEP", "name":"TestResourcePEP" }
-headers = { 'content-type': "application/json", "cache-control": "no-cache" }
-res = requests.get("http://localhost:5566/resources/5967f301-62a4-44e2-8a05-84a12c37456a", headers=headers, verify=False)
+headers = { 'content-type': "application/json", "cache-control": "no-cache", "Authorization": "Bearer filler"  }
+res = requests.get("http://localhost:5566/resources/1b107ef3-36f3-44d1-adb4-fe6a073d5db", headers=headers, verify=False)
 print(res.status_code)
 print(res.text)
 print(res.headers)
@@ -60,10 +58,13 @@ ticket = res.headers["WWW-Authenticate"].split("ticket=")[1]
 headers = { 'content-type': "application/x-www-form-urlencoded", "cache-control": "no-cache"}
 payload = { "claim_token_format": "http://openid.net/specs/openid-connect-core-1_0.html#IDToken", "claim_token": jwt, "ticket": ticket, "grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket", "client_id": g_config["client_id"], "client_secret": g_config["client_secret"], "scope": 'Authenticated'}
 res = requests.post(__TOKEN_ENDPOINT, headers=headers, data=payload, verify=False)
+print(res.status_code)
 rpt = res.json()["access_token"]
 
 headers = { 'content-type': "application/json", "cache-control": "no-cache", "Authorization": "Bearer "+rpt }
-res = requests.get("http://localhost:5566/resources/5967f301-62a4-44e2-8a05-84a12c37456a", headers=headers, verify=False)
+res = requests.get("http://localhost:5566/resources/1b107ef3-36f3-44d1-adb4-fe6a073d5db", headers=headers, verify=False)
 print(res.status_code)
 print(res.text)
 print(res.headers)
+print("JSON")
+print(res.json())

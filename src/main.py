@@ -12,9 +12,7 @@ from config import load_config, save_config
 from eoepca_scim import EOEPCA_Scim, ENDPOINT_AUTH_CLIENT_POST
 from custom_oidc import OIDCHandler
 from custom_uma import UMA_Handler
-import logging
 
-logging.basicConfig(level=logging.DEBUG)
 ### INITIAL SETUP
 # Global config objects
 g_config = load_config("config/config.json")
@@ -28,8 +26,7 @@ if "client_id" not in g_config or "client_secret" not in g_config:
     scim_client = EOEPCA_Scim(g_config["auth_server_url"])
     new_client = scim_client.registerClient("PEP Dynamic Client",
                                 grantTypes = ["client_credentials"],
-                                #TODO check if needed
-                                redirectURIs = ["https://test.com"],
+                                redirectURIs = [""],
                                 logoutURI = "", 
                                 responseTypes = ["code","token","id_token"],
                                 scopes = ['openid', 'uma_protection', 'permission'],
@@ -46,8 +43,7 @@ else:
 oidc_client = OIDCHandler(g_wkh,
                             client_id = g_config["client_id"],
                             client_secret = g_config["client_secret"],
-                            #TODO check if needed
-                            redirect_uri = "https://test.com",
+                            redirect_uri = "",
                             scopes = ['openid', 'uma_protection', 'permission'],
                             verify_ssl = g_config["check_ssl_certs"])
 

@@ -1,4 +1,6 @@
+import unittest
 import subprocess
+import os
 import requests
 import json
 import sys
@@ -15,7 +17,7 @@ from Crypto.PublicKey import RSA
 from WellKnownHandler import WellKnownHandler, TYPE_SCIM, TYPE_OIDC, KEY_SCIM_USER_ENDPOINT, KEY_OIDC_TOKEN_ENDPOINT, KEY_OIDC_REGISTRATION_ENDPOINT, KEY_OIDC_SUPPORTED_AUTH_METHODS_TOKEN_ENDPOINT, TYPE_UMA_V2, KEY_UMA_V2_PERMISSION_ENDPOINT
 from eoepca_uma import rpt, resource
 
-config = {}
+g_config = {}
 with open("../src/config/config.json") as j:
     g_config = json.load(j)
 
@@ -45,24 +47,30 @@ _payload = {
         }
 _jws = JWS(_payload, alg="RS256")
 jwt = _jws.sign_compact(keys=[_rsajwk])
+#print(jwt)
 
-payload = { "resource_scopes":[ "Authenticated"], "icon_uri":"/testResourcePEP", "name":"TestResourcePEPMod" }
-headers = { 'content-type': "application/json", "cache-control": "no-cache" }
-res = requests.put("http://localhost:5566/resources/a178eb5e-2307-4bbc-8964-18e8357bc583", headers=headers, json=payload, verify=False)
-print(res.status_code)
-print(res.text)
-print(res.headers)
+#payload = { "resource_scopes":[ "read-public","post-updates","read-private"], "icon_uri":"/testResource1", "name":"TestResource1" }
+#headers = { 'content-type': "application/json", "cache-control": "no-cache" }
+
+#Get Ticket for resource list
+headers = { 'content-type': "application/x-www-form-urlencoded", "cache-control": "no-cache", "Authorization": "Bearer filler"}
+res = requests.get("http://localhost:5566/resources", headers=headers, verify=False)
 ticket = res.headers["WWW-Authenticate"].split("ticket=")[1]
 
 #Get RPT
 headers = { 'content-type': "application/x-www-form-urlencoded", "cache-control": "no-cache"}
 payload = { "claim_token_format": "http://openid.net/specs/openid-connect-core-1_0.html#IDToken", "claim_token": jwt, "ticket": ticket, "grant_type": "urn:ietf:params:oauth:grant-type:uma-ticket", "client_id": g_config["client_id"], "client_secret": g_config["client_secret"], "scope": 'Authenticated'}
 res = requests.post(__TOKEN_ENDPOINT, headers=headers, data=payload, verify=False)
+#print(res.status_code)
+#print(res.text)
+#print(res.headers)
+#print(res.json())
 rpt = res.json()["access_token"]
 
-headers = { 'content-type': "application/json", "cache-control": "no-cache", "Authorization": "Bearer "+rpt }
-payload = { "resource_scopes":[ "Authenticated"], "icon_uri":"/testResourcePEP", "name":"TestResourcePEPMod" }
-res = requests.put("http://localhost:5566/resources/a178eb5e-2307-4bbc-8964-18e8357bc583", headers=headers, json=payload, verify=False)
+#Get Resource List
+headers = { 'content-type': "application/x-www-form-urlencoded", "cache-control": "no-cache", "Authorization": "Bearer "+rpt}
+res = requests.get("http://localhost:5566/resources", headers=headers, verify=False)
 print(res.status_code)
 print(res.text)
 print(res.headers)
+#print(res.json())

@@ -20,9 +20,7 @@ with open("../src/config/config.json") as j:
     g_config = json.load(j)
 
 wkh = WellKnownHandler(g_config["auth_server_url"], secure=False)
-__SCIM_USERS_ENDPOINT = wkh.get(TYPE_SCIM, KEY_SCIM_USER_ENDPOINT)
 __TOKEN_ENDPOINT = wkh.get(TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT)
-__REGISTER_ENDPOINT = wkh.get(TYPE_OIDC, KEY_OIDC_REGISTRATION_ENDPOINT)
 
 #Generate ID Token
 _rsakey = RSA.generate(2048)

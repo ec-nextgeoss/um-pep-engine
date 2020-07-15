@@ -43,7 +43,7 @@ class UMA_Handler:
 
         resource_registration_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
         pat = self.oidch.get_new_pat()
-        new_resource_id = resource.update(pat, resource_registration_endpoint+"/", resource_id, name, scopes, description=description, icon_uri= icon_uri, secure = self.verify)
+        new_resource_id = resource.update(pat, resource_registration_endpoint, resource_id, name, scopes, description=description, icon_uri= icon_uri, secure = self.verify)
         print("Updated resource '"+name+"' with ID :"+new_resource_id)
         
     def delete(self, resource_id: str):
@@ -59,7 +59,7 @@ class UMA_Handler:
         resource_registration_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
         pat = self.oidch.get_new_pat()
         try:
-            resource.delete(pat, resource_registration_endpoint+"/", resource_id, secure = self.verify)
+            resource.delete(pat, resource_registration_endpoint, resource_id, secure = self.verify)
             print("Deleted resource with ID :"+resource_id)
             self.update_resources_from_as()
         except Exception as e:
