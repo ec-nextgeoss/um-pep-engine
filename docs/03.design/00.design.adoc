@@ -112,8 +112,8 @@ This class would be called from APIs within the PEP repository. At the moment th
 The database will only be accesible by the API or the Proxy.
 The main methods for the interaction with the database are displayed in this dataflow as a summary of its scope:
 
-image::../images/MongoFlow.png[top=5%, align=right, pdfwidth=6.5in]
+image::../images/MongoFlow.png[top=5%, align="center", pdfwidth=6.5in]
 
 === Applicable Resources
 
-* UMA 2.0 Specification - https://docs.kantarainitiative.org/uma/wg/rec-oauth-uma-grant-2.0.html
+* MongoDB image from DockerHub - https://hub.docker.com/_/mongo
