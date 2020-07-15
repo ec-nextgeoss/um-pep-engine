@@ -62,7 +62,7 @@ The parameters that are accepted, and their meaning, are as follows:
 
 The only information the PEP handles are tickets given by the Auth Server, and RPTs which are sent only to the Auth Server.
 
-All data is ephimeral at the time of writting, except the data stored at the config file. The resources are loaded into memory, but in the future they will be stored on a separate database to allow large amounts of resources and more complex queries.
+All data is ephimeral at the time of writting, except the data stored at the config file. The resources are loaded into a mongo database, this allows to store large amounts of resources and more complex queries.
 
 What follows is an example of the nominal flow for the PEP, and "ADES" is the Resource Server the PEP is protecting:
 
@@ -88,23 +88,31 @@ The design of the PEP allows for further improvements if need be. For example:
 
 == RESOURCE RESPOSITORY
 === Overview and Purpose
+It is the database based on MongoDB where the resources are stored and queried for the PEP pourposes
 
-Included with the PEP there is a script at the source path that performs queries against a Mongo Database. The main purpose of this script is to reduce the usage of RAM when registering a resource and when querying for its content.
+Included with the PEP there is a script at the source path that performs queries against a Mongo Database. The main purpose of this script is to reduce the usage of RAM when registering a resource locally and when querying for its content.
 It is developed to generate a database called 'resource_db' in case it does not exist. The collection used for the storage of the documents is called 'resources'.
 The script defines the following methods:
 
 * **insert_in_mongo**: Will generate a document with the resource data recived as input if it alredy exists it will update it. The main parameters of the resource would be an auto-generated id provided by mongo which identify each document in the database, the resource_id provided by the login-service, and the reverse_match_url which will define the endpoint of the resource. This would be mandatory parameters in order to perform other kind of queries.
-* **get_id_from_uri**: This feature will return the id for the best candidate of the match by a URL given.
+* **get_id_from_uri**: This feature will return the id for the best candidate of the match by a URI given.
 * **delete_resource**: This function will recive a resource id and will find and delete the matched document
 
-This script is manipulated by the API which would intercept the request in order to perform GET,PUT,POST and DELETE methods.
-
+This script is manipulated by the API which would intercept the request in order to perform PUT,POST and DELETE methods.
+The GET method would be called by the reverse proxy since it will be in charge of filtering the resource with the given URI
 === Software Reuse and Dependencies
 
 The script needs the library 'pymongo', to query the database. It will expect a MongoDB service running on the default's Mongo port 27017
 In order to simulate database responses for unit tests, is needed to use the python mock library.
 
 This class would be called from APIs within the PEP repository. At the moment the usage is mainly for the resource interaction purposes, but this can easily be reused by other agents.
+
+=== Data flow
+
+The database will only be accesible by the API or the Proxy.
+The main methods for the interaction with the database are displayed in this dataflow as a summary of its scope:
+
+image::../images/MongoFlow.png[top=5%, align=right, pdfwidth=6.5in]
 
 === Applicable Resources
 
