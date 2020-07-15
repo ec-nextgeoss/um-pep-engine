@@ -100,6 +100,7 @@ The script defines the following methods:
 
 This script is manipulated by the API which would intercept the request in order to perform PUT,POST and DELETE methods.
 The GET method would be called by the reverse proxy since it will be in charge of filtering the resource with the given URI
+
 === Software Reuse and Dependencies
 
 The script needs the library 'pymongo', to query the database. It will expect a MongoDB service running on the default's Mongo port 27017
