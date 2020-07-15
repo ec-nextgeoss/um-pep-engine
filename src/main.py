@@ -175,8 +175,8 @@ def resource_request(path):
     custom_mongo = Mongo_Handler()
     rpt = request.headers.get('Authorization')
     # Get resource
-    scopes = uma_handler.resource_exists("/"+path) # TODO: Request all scopes? How can a user set custom scopes?
     resource_id = custom_mongo.get_id_from_uri(path)
+    scopes = uma_handler.get_resource_scopes(resource_id)
     if rpt:
         print("Token found: "+rpt)
         rpt = rpt.replace("Bearer ","").strip()
