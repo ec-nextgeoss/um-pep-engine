@@ -48,7 +48,8 @@ class UMA_Handler:
         """
         pat = self.oidch.get_new_pat()
         resource_reg_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
-        r=self.get_id_from_uri(icon_uri)
+        r=self.mongo.get_id_from_uri(icon_uri)
+        if not r: return False
         data = resource.read(pat, resource_reg_endpoint, r, self.verify)
         if "icon_uri" in data and data["icon_uri"] == icon_uri:
             return True

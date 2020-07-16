@@ -29,8 +29,10 @@ class Mongo_Handler:
             myquery = { "reverse_match_url": total }
             found=col.find_one(myquery)
             if found:
-                k.append(found['resource_id'])   
-        return k[-1]
+                k.append(found['resource_id'])
+        if len(k)>0:
+            return k[-1]
+        else: return None
 
     def resource_exists(self, resource_id):
         '''
