@@ -9,8 +9,7 @@ jobs:
   include:
     - stage: Testing
       install: pip3 install -r src/requirements.txt
-      script: pip3 install ./
-      script: python3 -m unittest src/test/test.py
+      script: python3 -m unittest tests/testMongo.py
     
     - stage: container creation and publishing
       install: skip
