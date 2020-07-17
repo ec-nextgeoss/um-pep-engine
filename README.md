@@ -17,7 +17,7 @@
   <p align="center">
     Policy Enforcement Point for EOEPCA project
     <br />
-    <a href="https://github.com/EOEPCA/um-pep-engine"><strong>Explore the docs »</strong></a>
+    <a href="https://eoepca.github.io/um-pep-engine/"><strong>Explore the docs »</strong></a>
     <br />
     <a href="https://github.com/EOEPCA/um-pep-engine/issues">Report Bug</a>
     ·
@@ -144,6 +144,13 @@ Examples, given the example values of:
 
 At the moment, the PEP will auto register a resource for the sake of demoing it's capabilities, using the `create` function of the UMA handler. This can be deleted if unwanted, or expanded to dinamically register resources. Note that the UMA library used allows for full control over resources (create, delete, etc) and could be used to help in that functionality expansion.
 
+### Test functionality
+
+In order to test the PEP engine at the moment first you have reach this prerequisites:
+
+- Register a client and a user inside the gluu instance and update the test_settings.json
+- Disable current UMA Policies and set inside JSONConfig > OxAuth umaGrantAccessIfNoPolicies to true
+
 ### Endpoints
 
 The PEP uses the following endpoints from a "Well Known Handler", which parses the Auth server's "well-known" endpoints:
@@ -160,6 +167,9 @@ The internal UMA handler works with an in-memory list of resources at `self.regi
 This can be expanded to a better database, by replacing the functions `update_resources_from_as` and `add_resource_to_cache`, which control how this cache is refreshed and written to, respectively
 
 --------
+
+When a resource is registered, the name and id are stored as a document into a Mongodb database as a sidecar container sharing data through a persistent storage volume.
+The pod runs the pep-engine image and the mongo image exposing the default mongo port (27017) where communicates the service and keeps it alive for the pep-engine container to query the database. 
 
 ## Roadmap
 

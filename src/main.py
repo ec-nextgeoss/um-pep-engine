@@ -1,21 +1,62 @@
 #!/usr/bin/env python3
 
 from WellKnownHandler import WellKnownHandler
+from WellKnownHandler import TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT, KEY_UMA_V2_PERMISSION_ENDPOINT, KEY_UMA_V2_INTROSPECTION_ENDPOINT
 
 from flask import Flask, request, Response
+from werkzeug.datastructures import Headers
 from random import choice
 from string import ascii_lowercase
-from requests import get
+from requests import get, post, put, delete
 import json
 
 from config import load_config, save_config
 from eoepca_scim import EOEPCA_Scim, ENDPOINT_AUTH_CLIENT_POST
 from custom_oidc import OIDCHandler
-from custom_uma import UMA_Handler
+from custom_uma import UMA_Handler, resource
+from custom_uma import rpt as class_rpt
+import os
+import sys
+import traceback
 
+from jwkest.jws import JWS
+from jwkest.jwk import RSAKey, import_rsa_key_from_file, load_jwks_from_url, import_rsa_key
+from jwkest.jwk import load_jwks
+from Crypto.PublicKey import RSA
 ### INITIAL SETUP
+
+env_vars = [
+"PEP_REALM",
+"PEP_AUTH_SERVER_URL",
+"PEP_PROXY_ENDPOINT",
+"PEP_SERVICE_HOST",
+"PEP_SERVICE_PORT",
+"PEP_S_MARGIN_RPT_VALID",
+"PEP_CHECK_SSL_CERTS",
+"PEP_USE_THREADS",
+"PEP_DEBUG_MODE",
+"PEP_RESOURCE_SERVER_ENDPOINT"]
+
+use_env_var = True
+
+for env_var in env_vars:
+    if env_var not in os.environ:
+        use_env_var = False
+
+g_config = {}
 # Global config objects
-g_config = load_config("config/config.json")
+if use_env_var is False:
+    g_config = load_config("config/config.json")
+else:
+    for env_var in env_vars:
+        env_var_config = env_var.replace('PEP_', '')
+
+        if "true" in os.environ[env_var].replace('"', ''):
+            g_config[env_var_config.lower()] = True
+        elif "false" in os.environ[env_var].replace('"', ''):
+            g_config[env_var_config.lower()] = False
+        else:
+            g_config[env_var_config.lower()] = os.environ[env_var].replace('"', '')
 
 # Global handlers
 g_wkh = WellKnownHandler(g_config["auth_server_url"], secure=False)
@@ -36,11 +77,15 @@ if "client_id" not in g_config or "client_secret" not in g_config:
                                 responseTypes = ["code","token","id_token"],
                                 scopes = ['openid', 'uma_protection', 'permission'],
                                 token_endpoint_auth_method = ENDPOINT_AUTH_CLIENT_POST)
-    print("NEW CLIENT created with ID '"+new_client["client_id"]+"', since no client config was found on config.json")
+    print("NEW CLIENT created with ID '"+new_client["client_id"]+"', since no client config was found on config.json or environment")
 
     g_config["client_id"] = new_client["client_id"]
     g_config["client_secret"] = new_client["client_secret"]
-    save_config("config/config.json", g_config)
+    if use_env_var is False:
+        save_config("config/config.json", g_config)
+    else:
+        os.environ["PEP_CLIENT_ID"] = new_client["client_id"]
+        os.environ["PEP_CLIENT_SECRET"] = new_client["client_secret"]
     print("New client saved to config!")
 else:
     print("Client found in config, using: "+g_config["client_id"])
@@ -65,41 +110,105 @@ except Exception as e:
 app = Flask(__name__)
 app.secret_key = ''.join(choice(ascii_lowercase) for i in range(30)) # Random key
 
+def generateRSAKeyPair():
+    _rsakey = RSA.generate(2048)
+    private_key = _rsakey.exportKey()
+    public_key = _rsakey.publickey().exportKey()
+
+    file_out = open("config/private.pem", "wb+")
+    file_out.write(private_key)
+    file_out.close()
+
+    file_out = open("config/public.pem", "wb+")
+    file_out.write(public_key)
+    file_out.close()
+
+    return private_key, public_key
+
+private_key, public_key = generateRSAKeyPair()
+
+def create_jwt(payload, p_key):
+    rsajwk = RSAKey(kid="RSA1", key=import_rsa_key(p_key))
+    jws = JWS(payload, alg="RS256")
+    return jws.sign_compact(keys=[rsajwk])
+
+def split_headers(headers):
+    headers_tmp = headers.splitlines()
+    d = {}
+
+    for h in headers_tmp:
+        h = h.split(': ')
+        if len(h) < 2:
+            continue
+        field=h[0]
+        value= h[1]
+        d[field] = value
+
+    return d
+
+def proxy_request(request, new_header):
+    try:
+        if request.method == 'POST':
+            res = post(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, data=request.data, stream=False)           
+        elif request.method == 'GET':
+            res = get(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, stream=False)
+        elif request.method == 'PUT':
+            res = put(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, data=request.data, stream=False)           
+        elif request.method == 'DELETE':
+            res = delete(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, stream=False)
+        else:
+            response = Response()
+            response.status_code = 501
+            return response
+        excluded_headers = ['transfer-encoding']
+        headers = [(name, value) for (name, value) in     res.raw.headers.items() if name.lower() not in excluded_headers]
+        response = Response(res.content, res.status_code, headers)
+        return response
+    except Exception as e:
+        response = Response()
+        print("Error while redirecting to resource: "+ traceback.format_exc(),file=sys.stderr)
+        response.status_code = 500
+        response.content = "Error while redirecting to resource: "+str(e)
+        return response
+
 
 @app.route(g_config["proxy_endpoint"], defaults={'path': ''})
-@app.route(g_config["proxy_endpoint"]+"/<path:path>", methods=["GET"])
+@app.route(g_config["proxy_endpoint"]+"/<path:path>", methods=["GET","POST","PUT","DELETE"])
 def resource_request(path):
     # Check for token
     print("Processing path: '"+path+"'")
     rpt = request.headers.get('Authorization')
     # Get resource
     resource_id, scopes = uma_handler.resource_exists("/"+path) # TODO: Request all scopes? How can a user set custom scopes?
-    response = Response()
+
     if rpt:
         print("Token found: "+rpt)
         rpt = rpt.replace("Bearer ","").strip()
         # Validate for a specific resource
-        if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]) or not api_rpt_uma_validation:
+        if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], int(g_config["s_margin_rpt_valid"])) or not api_rpt_uma_validation:
             print("RPT valid, accesing ")
-            # redirect to resource
-            try:
-                cont = get(g_config["resource_server_endpoint"]+"/"+path).content
-                return cont
-            except Exception as e:
-                print("Error while redirecting to resource: "+str(e))
-                response.status_code = 500
-                return response
+            introspection_endpoint=g_wkh.get(TYPE_UMA_V2, KEY_UMA_V2_INTROSPECTION_ENDPOINT)
+            pat = oidc_client.get_new_pat()
+            rpt_class = class_rpt.introspect(rpt=rpt, pat=pat, introspection_endpoint=introspection_endpoint, secure=False)
+            jwt_rpt_response = create_jwt(rpt_class, private_key)
 
+            headers_splitted = split_headers(str(request.headers))
+            headers_splitted['Authorization'] = "Bearer "+str(jwt_rpt_response)
+
+            new_header = Headers()
+            for key, value in headers_splitted.items():
+                new_header.add(key, value)
+            # redirect to resource
+            return proxy_request(request, new_header)
         print("Invalid RPT!, sending ticket")
         # In any other case, we have an invalid RPT, so send a ticket.
         # Fallthrough intentional
-
     print("No auth token, or auth token is invalid")
+    response = Response()
     if resource_id is not None:
         print("Matched resource: "+str(resource_id))
         # Generate ticket if token is not present
         ticket = uma_handler.request_access_ticket([{"resource_id": resource_id, "resource_scopes": scopes }])
-
         # Return ticket
         response.headers["WWW-Authenticate"] = "UMA realm="+g_config["realm"]+",as_uri="+g_config["auth_server_url"]+",ticket="+ticket
         response.status_code = 401 # Answer with "Unauthorized" as per the standard spec.
@@ -223,6 +332,6 @@ def resource_operation(resource_id):
 app.run(
     debug=g_config["debug_mode"],
     threaded=g_config["use_threads"],
-    port=g_config["service_port"],
+    port=int(g_config["service_port"]),
     host=g_config["service_host"]
 )
