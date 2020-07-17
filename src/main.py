@@ -20,6 +20,11 @@ g_config = load_config("config/config.json")
 # Global handlers
 g_wkh = WellKnownHandler(g_config["auth_server_url"], secure=False)
 
+# Global setting to validate RPTs received at endpoints
+api_rpt_uma_validation = g_config["api_rpt_uma_validation"]
+if api_rpt_uma_validation: print("UMA RPT validation is ON.")
+else: print("UMA RPT validation is OFF.")
+
 # Generate client dynamically if one is not configured.
 if "client_id" not in g_config or "client_secret" not in g_config:
     print ("NOTICE: Client not found, generating one... ")
@@ -74,7 +79,7 @@ def resource_request(path):
         print("Token found: "+rpt)
         rpt = rpt.replace("Bearer ","").strip()
         # Validate for a specific resource
-        if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]):
+        if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]) or not api_rpt_uma_validation:
             print("RPT valid, accesing ")
             # redirect to resource
             try:
@@ -129,7 +134,7 @@ def getResourceList():
             r = uma_handler.get_resource(rID)
             entry = {'_id': r["_id"], 'name': r["name"]}
             resourceListToReturn.append(entry)
-        if uma_handler.validate_rpt(rpt, resourceListToValidate, g_config["s_margin_rpt_valid"]):
+        if uma_handler.validate_rpt(rpt, resourceListToValidate, g_config["s_margin_rpt_valid"]) or not api_rpt_uma_validation:
             return json.dumps(resourceListToReturn)
     print("No auth token, or auth token is invalid")
     if resourceListToValidate:
@@ -149,15 +154,21 @@ def resource_operation(resource_id):
     response = Response()
 
     #add resource is outside of rpt validation, as it only requires a client pat to register a new resource
-    if request.method == "POST":
-        if request.is_json:
-            data = request.get_json()
-            if data.get("name") and data.get("resource_scopes") and data.get("name") == resource_id:
-                return uma_handler.create(data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
-            else:
-                response.status_code = 500
-                response.headers["Error"] = "Invalid data or incorrect resource name passed on URL called for resource creation!"
-                return response
+    try:
+        if request.method == "POST":
+            if request.is_json:
+                data = request.get_json()
+                if data.get("name") and data.get("resource_scopes") and data.get("name") == resource_id:
+                    return uma_handler.create(data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
+                else:
+                    response.status_code = 500
+                    response.headers["Error"] = "Invalid data or incorrect resource name passed on URL called for resource creation!"
+                    return response
+    except Exception as e:
+        print("Error while creating resource: "+str(e))
+        response.status_code = 500
+        response.headers["Error"] = str(e)
+        return response
 
     rpt = request.headers.get('Authorization')
     # Get resource scopes from resource_id
@@ -166,12 +177,13 @@ def resource_operation(resource_id):
         #Token was found, check for validation
         print("Found rpt in request, validating...")
         rpt = rpt.replace("Bearer ","").strip()
-        if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]):
+        if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]) or not api_rpt_uma_validation:
             print("RPT valid, proceding...")
             try:
                 #retrieve resource
                 if request.method == "GET":
                     return uma_handler.get_resource(resource_id)
+                #update resource
                 elif request.method == "PUT":
                     if request.is_json:
                         data = request.get_json()
