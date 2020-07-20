@@ -8,5 +8,6 @@
     "check_ssl_certs": false,
     "use_threads": true,
     "debug_mode": true,
-    "resource_server_endpoint": "http://eoepca-ades-core"
+    "resource_server_endpoint": "http://eoepca-ades-core",
+    "api_rpt_uma_validation": true
 }
