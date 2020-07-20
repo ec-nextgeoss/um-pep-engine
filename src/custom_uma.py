@@ -92,6 +92,29 @@ class UMA_Handler:
         
         return False
         
+    def get_resource_scopes(self, resource_id: str):
+        """
+        Returns the matching scopes for resource_id or None if not found
+        """
+        pat = self.oidch.get_new_pat()
+        resource_reg_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
+        data = resource.read(pat, resource_reg_endpoint, resource_id, self.verify)
+        if "_id" in data and data["_id"] == resource_id:
+            return data["resource_scopes"]
+        return None
+        
+    def get_resource(self, resource_id: str):
+        """
+        Returns the matching resource for resource_id or None if not found
+        """
+        pat = self.oidch.get_new_pat()
+        resource_reg_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
+        data = resource.read(pat, resource_reg_endpoint, resource_id, self.verify)
+        if "_id" in data and data["_id"] == resource_id:
+            return data
+        return None
+
+
     def request_access_ticket(self, resources):
         permission_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_PERMISSION_ENDPOINT)
         pat = self.oidch.get_new_pat()
