@@ -31,8 +31,8 @@ class UMA_Handler:
         print("Created resource '"+name+"' with ID :"+new_resource_id)
         # Register resources inside the dbs
         custom_mongo = Mongo_Handler()
-        a=custom_mongo.insert_in_mongo(name, new_resource_id, icon_uri)
-        if a: print('Resource saved in DB succesfully')
+        #a=custom_mongo.insert_in_mongo(name, new_resource_id, icon_uri)
+        #if a: print('Resource saved in DB succesfully')
         
         self.add_resource_to_cache(new_resource_id)
         return new_resource_id
@@ -115,8 +115,8 @@ class UMA_Handler:
         resource_reg_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
         for r in self.registered_resources:
             data = resource.read(pat, resource_reg_endpoint, r, self.verify)
-            #if "icon_uri" in data and data["icon_uri"] == icon_uri:
-            if "icon_uri" in data: #Default behavior for demo purposes
+            if "icon_uri" in data and data["icon_uri"] == icon_uri:
+            #if "icon_uri" in data: #Default behavior for demo purposes
                 return data["_id"], data["resource_scopes"]
         
         return None, None

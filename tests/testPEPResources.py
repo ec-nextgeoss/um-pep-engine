@@ -120,6 +120,8 @@ class PEPResourceTest(unittest.TestCase):
         self.assertEqual(status, 200)
         print("Create resource: Resource created with id: "+self.resourceID)
         del status
+        print("=======================")
+        print("")
 
         #Get created resource
         #First attempt should return a 401 with a ticket
@@ -137,6 +139,8 @@ class PEPResourceTest(unittest.TestCase):
         print("Get resource: Resource found.")
         print(reply)
         del status, reply, rpt
+        print("=======================")
+        print("")
 
         #Get resource list
         #Same MO as above
@@ -158,6 +162,8 @@ class PEPResourceTest(unittest.TestCase):
         print("Get resource list: Resource found on Internal List.")
         print(reply)
         del status, reply, rpt
+        print("=======================")
+        print("")
         
         #Modify created resource
         #This will simply test if we can modify the pre-determined resource name with "Mod" at the end
@@ -177,6 +183,8 @@ class PEPResourceTest(unittest.TestCase):
         print("Update resource: Resource properly modified.")
         print(reply)
         del status, reply, rpt
+        print("=======================")
+        print("")
 
         #Delete created resource
         status, reply = self.deleteResource()
@@ -187,12 +195,16 @@ class PEPResourceTest(unittest.TestCase):
         self.assertEqual(status, 204)
         print("Delete resource: Resource deleted.")
         del status, reply, rpt
+        print("=======================")
+        print("")
 
         #Get resource to make sure it was deleted
         status, _ = self.getResource()
         self.assertEqual(status, 500)
         print("Get resource: Resource correctly not found.")
         del status
+        print("=======================")
+        print("")
 
         #Get resource list to make sure the resource was removed from internal cache
         status, reply = self.getResourceList()
@@ -206,6 +218,8 @@ class PEPResourceTest(unittest.TestCase):
         print("Get resource list: Resource correctly removed from Internal List.")
         print(reply)
         del status, reply, rpt, found
+        print("=======================")
+        print("")
 
 if __name__ == '__main__':
     unittest.main()
