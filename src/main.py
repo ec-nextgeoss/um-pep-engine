@@ -283,7 +283,11 @@ def resource_operation(resource_id):
 
     rpt = request.headers.get('Authorization')
     # Get resource scopes from resource_id
-    scopes = uma_handler.get_resource_scopes(resource_id)
+    try:
+        scopes = uma_handler.get_resource_scopes(resource_id)
+    except Exception as e:
+        print("Error occured when retrieving resource scopes: " +str(e))
+        scopes = None
     if rpt:
         #Token was found, check for validation
         print("Found rpt in request, validating...")
