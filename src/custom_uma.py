@@ -31,10 +31,46 @@ class UMA_Handler:
         print("Created resource '"+name+"' with ID :"+new_resource_id)
         # Register resources inside the dbs
         custom_mongo = Mongo_Handler()
-        a=custom_mongo.insert_in_mongo(name, new_resource_id, icon_uri)
-        if a: print('Resource saved in DB succesfully')
+        #a=custom_mongo.insert_in_mongo(name, new_resource_id, icon_uri)
+        #if a: print('Resource saved in DB succesfully')
         
         self.add_resource_to_cache(new_resource_id)
+        return new_resource_id
+        
+    def update(self, resource_id: str, name: str, scopes: List[str], description: str, icon_uri: str):
+        """
+        Updates an existing resource.
+        Can throw exceptions
+        """
+
+        id, _ = self.resource_exists(icon_uri)
+        if id is None:
+            raise Exception("Resource for URI "+icon_uri+" does not exist")
+
+        resource_registration_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
+        pat = self.oidch.get_new_pat()
+        new_resource_id = resource.update(pat, resource_registration_endpoint, resource_id, name, scopes, description=description, icon_uri= icon_uri, secure = self.verify)
+        print("Updated resource '"+name+"' with ID :"+new_resource_id)
+        
+    def delete(self, resource_id: str):
+        """
+        Deletes an existing resource.
+        Can throw exceptions
+        """
+
+        id = self.get_resource(resource_id)["_id"]
+        if id is None:
+            raise Exception("Resource for ID "+resource_id+" does not exist")
+
+        resource_registration_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
+        pat = self.oidch.get_new_pat()
+        try:
+            resource.delete(pat, resource_registration_endpoint, resource_id, secure = self.verify)
+            print("Deleted resource with ID :"+resource_id)
+            self.update_resources_from_as()
+        except Exception as e:
+            print("Error while deleting resource: "+str(e))
+
 
     # Usage of Python library for query mongodb instance
 
@@ -48,7 +84,7 @@ class UMA_Handler:
 
     def add_resource_to_cache(self, id: str):
         """
-        Adds a resource's if to internal cache
+        Adds a resource's id to internal cache
         """
         self.registered_resources.append(id)
 
@@ -60,6 +96,13 @@ class UMA_Handler:
         pat = self.oidch.get_new_pat()
         resource_reg_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
         self.registered_resources = resource.list(pat, resource_reg_endpoint, self.verify)
+        
+    def get_all_resources(self):
+        """
+        Updates and returns all the registed resources
+        """
+        self.update_resources_from_as()
+        return self.registered_resources
 
     def resource_exists(self, icon_uri: str) -> (str, str):
         """
@@ -72,11 +115,37 @@ class UMA_Handler:
         resource_reg_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
         for r in self.registered_resources:
             data = resource.read(pat, resource_reg_endpoint, r, self.verify)
-            #if "icon_uri" in data and data["icon_uri"] == icon_uri:
-            if "icon_uri" in data: #Default behavior for demo purposes
+            if "icon_uri" in data and data["icon_uri"] == icon_uri:
+            #if "icon_uri" in data: #Default behavior for demo purposes
                 return data["_id"], data["resource_scopes"]
         
         return None, None
+        
+    def get_resource_scopes(self, resource_id: str):
+        """
+        Returns the matching scopes for resource_id or None if not found
+        """
+        self.update_resources_from_as()
+        pat = self.oidch.get_new_pat()
+        resource_reg_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
+        for r in self.registered_resources:
+            data = resource.read(pat, resource_reg_endpoint, resource_id, self.verify)
+            if "_id" in data and data["_id"] == resource_id:
+                return data["resource_scopes"]
+        return None
+        
+    def get_resource(self, resource_id: str):
+        """
+        Returns the matching resource for resource_id or None if not found
+        """
+        self.update_resources_from_as()
+        pat = self.oidch.get_new_pat()
+        resource_reg_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
+        for r in self.registered_resources:
+            data = resource.read(pat, resource_reg_endpoint, resource_id, self.verify)
+            if "_id" in data and data["_id"] == resource_id:
+                return data
+        return None
        
     def request_access_ticket(self, resources):
         permission_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_PERMISSION_ENDPOINT)
