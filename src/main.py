@@ -281,19 +281,13 @@ def resource_operation(resource_id):
         response.headers["Error"] = str(e)
         return response
 
-    rpt = request.headers.get('Authorization')
-    # Get resource scopes from resource_id
-    try:
-        scopes = uma_handler.get_resource_scopes(resource_id)
-    except Exception as e:
-        print("Error occured when retrieving resource scopes: " +str(e))
-        scopes = None
-    if rpt:
+    pat = request.headers.get('Authorization')
+    if pat:
         #Token was found, check for validation
-        print("Found rpt in request, validating...")
-        rpt = rpt.replace("Bearer ","").strip()
-        if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], g_config["s_margin_rpt_valid"]) or not api_rpt_uma_validation:
-            print("RPT valid, proceding...")
+        print("Found pat in request, validating...")
+        pat = pat.replace("Bearer ","").strip()
+        if oidc_client.is_pat_valid(pat):
+            print("PAT valid, proceding...")
             try:
                 #retrieve resource
                 if request.method == "GET":
@@ -317,20 +311,8 @@ def resource_operation(resource_id):
                 return response
         
     print("No auth token, or auth token is invalid")
-    #Scopes have already been queried at this time, so if they are not None, we know the resource has been found. This is to avoid a second query.
-    if scopes is not None:
-        print("Matched resource: "+str(resource_id))
-        # Generate ticket if token is not present
-        ticket = uma_handler.request_access_ticket([{"resource_id": resource_id, "resource_scopes": scopes }])
-
-        # Return ticket
-        response.headers["WWW-Authenticate"] = "UMA realm="+g_config["realm"]+",as_uri="+g_config["auth_server_url"]+",ticket="+ticket
-        response.status_code = 401 # Answer with "Unauthorized" as per the standard spec.
-        return response
-    else:
-        print("Error, resource not found!")
-        response.status_code = 500
-        return response
+    response.status_code = 401
+    return response
     
 
 
