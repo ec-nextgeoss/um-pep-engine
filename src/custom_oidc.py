@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 from base64 import b64encode
-from WellKnownHandler import TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT
+from WellKnownHandler import TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT, KEY_OIDC_USERINFO_ENDPOINT, KEY_OIDC_CLIENTINFO_ENDPOINT
 
-from requests import post
+import requests
 
 class OIDCHandler:
 
@@ -22,7 +22,7 @@ class OIDCHandler:
         token_endpoint = self.wkh.get(TYPE_OIDC, KEY_OIDC_TOKEN_ENDPOINT)
         headers = {"content-type": "application/x-www-form-urlencoded", 'cache-control': "no-cache"}
         payload = "grant_type=client_credentials&client_id="+self.client_id+"&client_secret="+self.client_secret+"&scope="+" ".join(self.scopes).replace(" ","%20")+"&redirect_uri="+self.redirect_uri
-        response = post(token_endpoint, data=payload, headers=headers, verify = self.verify_ssl)
+        response = requests.post(token_endpoint, data=payload, headers=headers, verify = self.verify_ssl)
         
         try:
             access_token = response.json()["access_token"]
@@ -31,4 +31,21 @@ class OIDCHandler:
             exit(-1)
         
         return access_token
+
+    def is_pat_valid(self, pat_token):
+        userinfo_endpoint = self.wkh.get(TYPE_OIDC, KEY_OIDC_USERINFO_ENDPOINT)
+        clientinfo_endpoint = self.wkh.get(TYPE_OIDC, KEY_OIDC_CLIENTINFO_ENDPOINT)
+        headers = {"content-type": "application/x-www-form-urlencoded", 'cache-control': "no-cache"}
+        payload = {"access_token": pat_token}
+        r = requests.get(userinfo_endpoint, params=payload, headers=headers, verify=self.verify_ssl)
+        if (r.status_code == 200):
+            return True
+        else:
+            r = requests.get(clientinfo_endpoint, params=payload, headers=headers, verify=self.verify_ssl)
+            if (r.status_code == 200):
+                return True
+        return False
+
+         
+    # check user_info if it fails go for client_info
             
