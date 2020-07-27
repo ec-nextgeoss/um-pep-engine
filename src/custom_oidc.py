@@ -33,6 +33,9 @@ class OIDCHandler:
         return access_token
 
     def is_pat_valid(self, pat_token):
+        """
+        Verifies if the given pat token is valid
+        """
         userinfo_endpoint = self.wkh.get(TYPE_OIDC, KEY_OIDC_USERINFO_ENDPOINT)
         clientinfo_endpoint = self.wkh.get(TYPE_OIDC, KEY_OIDC_CLIENTINFO_ENDPOINT)
         headers = {"content-type": "application/x-www-form-urlencoded", 'cache-control': "no-cache"}
@@ -45,7 +48,4 @@ class OIDCHandler:
             if (r.status_code == 200):
                 return True
         return False
-
-         
-    # check user_info if it fails go for client_info
             

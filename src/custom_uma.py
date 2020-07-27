@@ -112,6 +112,15 @@ class UMA_Handler:
             return data
         return None
 
+    def get_resources(self):
+        """
+        Returns all the resources available
+        """
+        pat = self.oidch.get_new_pat()
+        rsrc_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_RESOURCE_REGISTRATION_ENDPOINT)
+        data = resource.list(pat, rsrc_endpoint, self.verify)
+        return data
+
 
     def request_access_ticket(self, resources):
         permission_endpoint = self.wkh.get(TYPE_UMA_V2, KEY_UMA_V2_PERMISSION_ENDPOINT)

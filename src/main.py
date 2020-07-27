@@ -182,6 +182,7 @@ def resource_request(path):
     rpt = request.headers.get('Authorization')
     # Get resource
     resource_id = custom_mongo.get_id_from_uri(path)
+    print (resource_id)
     scopes = uma_handler.get_resource_scopes(resource_id)
     if rpt:
         print("Token found: "+rpt)
@@ -229,34 +230,24 @@ def resource_request(path):
 @app.route("/resources", methods=["GET"])
 def getResourceList():
     print("Retrieving all registed resources...")
-    resources = uma_handler.get_all_resources()
-    rpt = request.headers.get('Authorization')
+    resources = uma_handler.get_resources()
+    pat = request.headers.get('Authorization')
     response = Response()
     resourceListToReturn = []
     resourceListToValidate = []
-    if rpt:
-        print("Token found: " + rpt)
-        rpt = rpt.replace("Bearer ","").strip()
+    if pat:
+        print("Token found: " + pat)
+        pat = pat.replace("Bearer ","").strip()
         #Token was found, check for validation
         for rID in resources:
             #In here we will use the loop for 2 goals: build the resource list to validate (all of them) and the potential reply list of resources, to avoid a second loop
-            scopes = uma_handler.get_resource_scopes(rID)
-            resourceListToValidate.append({"resource_id": rID, "resource_scopes": scopes })
             r = uma_handler.get_resource(rID)
             entry = {'_id': r["_id"], 'name': r["name"]}
             resourceListToReturn.append(entry)
-        if uma_handler.validate_rpt(rpt, resourceListToValidate, g_config["s_margin_rpt_valid"]) or not api_rpt_uma_validation:
+        if oidc_client.is_pat_valid(pat):
             return json.dumps(resourceListToReturn)
     print("No auth token, or auth token is invalid")
-    if resourceListToValidate:
-        # Generate ticket if token is not present
-        ticket = uma_handler.request_access_ticket(resourceListToValidate)
-
-        # Return ticket
-        response.headers["WWW-Authenticate"] = "UMA realm="+g_config["realm"]+",as_uri="+g_config["auth_server_url"]+",ticket="+ticket
-        response.status_code = 401 # Answer with "Unauthorized" as per the standard spec.
-        return response
-    response.status_code = 500
+    response.status_code = 401
     return response
 
 @app.route("/resources/<resource_id>", methods=["GET", "PUT", "POST", "DELETE"])
