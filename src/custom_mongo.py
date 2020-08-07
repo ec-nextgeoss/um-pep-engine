@@ -21,7 +21,7 @@ class Mongo_Handler:
         uri_split=uri.split('/')
         count=0
         for n in uri_split:
-            if count >= 2:
+            if count >= 1:
                 total = total + '/' + n
             else:
                 total = total + n
