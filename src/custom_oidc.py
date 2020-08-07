@@ -40,11 +40,11 @@ class OIDCHandler:
         clientinfo_endpoint = self.wkh.get(TYPE_OIDC, KEY_OIDC_CLIENTINFO_ENDPOINT)
         headers = {"content-type": "application/x-www-form-urlencoded", 'cache-control': "no-cache"}
         payload = {"access_token": pat_token}
-        r = requests.get(userinfo_endpoint, params=payload, headers=headers, verify=self.verify_ssl)
+        r = requests.get(clientinfo_endpoint, params=payload, headers=headers, verify=self.verify_ssl)
         if (r.status_code == 200):
             return True
         else:
-            r = requests.get(clientinfo_endpoint, params=payload, headers=headers, verify=self.verify_ssl)
+            r = requests.get(userinfo_endpoint, params=payload, headers=headers, verify=self.verify_ssl)
             if (r.status_code == 200):
                 return True
         return False
