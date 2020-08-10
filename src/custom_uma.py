@@ -140,7 +140,7 @@ class UMA_Handler:
         for resource_id in resources:
             data = resource.read(pat, resource_reg_endpoint, resource_id, self.verify)
             print(data)
-            if "icon_uri" in data and data["icon_uri"] == uri:
+            if "icon_uri" in data and data["icon_uri"] in uri:
                 return data["_id"]
         return None
 

@@ -15,7 +15,6 @@ from eoepca_scim import EOEPCA_Scim, ENDPOINT_AUTH_CLIENT_POST
 from custom_oidc import OIDCHandler
 from custom_uma import UMA_Handler, resource
 from custom_uma import rpt as class_rpt
-from custom_mongo import Mongo_Handler
 import os
 import sys
 import traceback
@@ -102,12 +101,12 @@ oidc_client = OIDCHandler(g_wkh,
 uma_handler = UMA_Handler(g_wkh, oidc_client, g_config["check_ssl_certs"])
 uma_handler.status()
 # Demo: register a new resource if it doesn't exist
-try:
-    uma_handler.create("ADES Service", ["Authenticated"], description="", icon_uri="/ADES")
-except Exception as e:
-    if "already exists" in str(e):
-        print("Resource already existed, moving on")
-    else: raise e
+# try:
+#     uma_handler.create("ADES Service", ["Authenticated"], description="", icon_uri="/ADES")
+# except Exception as e:
+#     if "already exists" in str(e):
+#         print("Resource already existed, moving on")
+#     else: raise e
 
 app = Flask(__name__)
 app.secret_key = ''.join(choice(ascii_lowercase) for i in range(30)) # Random key
@@ -151,13 +150,14 @@ def split_headers(headers):
 def proxy_request(request, new_header):
     try:
         if request.method == 'POST':
-            res = post(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, data=request.data, stream=False)           
+            res = post(g_config["resource_server_endpoint"], headers=new_header, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
         elif request.method == 'GET':
-            res = get(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, stream=False)
+            res = get(g_config["resource_server_endpoint"], headers=new_header, stream=False, verify=g_config["check_ssl_certs"])
+            print(res.url)
         elif request.method == 'PUT':
-            res = put(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, data=request.data, stream=False)           
+            res = put(g_config["resource_server_endpoint"], headers=new_header, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
         elif request.method == 'DELETE':
-            res = delete(g_config["resource_server_endpoint"]+"/"+request.full_path, headers=new_header, stream=False)
+            res = delete(g_config["resource_server_endpoint"], headers=new_header, stream=False, verify=g_config["check_ssl_certs"])
         else:
             response = Response()
             response.status_code = 501
@@ -178,18 +178,17 @@ def proxy_request(request, new_header):
 def resource_request(path):
     # Check for token
     print("Processing path: '"+path+"'")
-    custom_mongo = Mongo_Handler()
     rpt = request.headers.get('Authorization')
     # Get resource
-    resource_id = custom_mongo.get_id_from_uri(path)
-    print (resource_id)
+    resource_id = uma_handler.get_resource_from_uri(g_config["resource_server_endpoint"])
+    print("FOUND RSID: "+resource_id)
     scopes = uma_handler.get_resource_scopes(resource_id)
     if rpt:
         print("Token found: "+rpt)
         rpt = rpt.replace("Bearer ","").strip()
         # Validate for a specific resource
         if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], int(g_config["s_margin_rpt_valid"])) or not api_rpt_uma_validation:
-            print("RPT valid, accesing ")
+            print("RPT valid, accessing...")
             introspection_endpoint=g_wkh.get(TYPE_UMA_V2, KEY_UMA_V2_INTROSPECTION_ENDPOINT)
             pat = oidc_client.get_new_pat()
             rpt_class = class_rpt.introspect(rpt=rpt, pat=pat, introspection_endpoint=introspection_endpoint, secure=False)
@@ -202,6 +201,7 @@ def resource_request(path):
             for key, value in headers_splitted.items():
                 new_header.add(key, value)
             # redirect to resource
+            request.full_path = path
             return proxy_request(request, new_header)
         print("Invalid RPT!, sending ticket")
         # In any other case, we have an invalid RPT, so send a ticket.
