@@ -201,7 +201,6 @@ def resource_request(path):
             for key, value in headers_splitted.items():
                 new_header.add(key, value)
             # redirect to resource
-            request.full_path = path
             return proxy_request(request, new_header)
         print("Invalid RPT!, sending ticket")
         # In any other case, we have an invalid RPT, so send a ticket.
