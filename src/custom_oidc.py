@@ -43,9 +43,8 @@ class OIDCHandler:
         r = requests.get(clientinfo_endpoint, params=payload, headers=headers, verify=self.verify_ssl)
         if (r.status_code == 200):
             return True
-        else:
-            r = requests.get(userinfo_endpoint, params=payload, headers=headers, verify=self.verify_ssl)
-            if (r.status_code == 200):
-                return True
+        r = requests.get(userinfo_endpoint, params=payload, headers=headers, verify=self.verify_ssl)
+        if (r.status_code == 200):
+            return True
         return False
             
