@@ -8,81 +8,34 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/EOEPCA/um-pep-engine">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
-  </a>
-
   <h3 align="center">um-pep-engine</h3>
-
   <p align="center">
-    Policy Enforcement Point for EOEPCA project
-    <br />
-    <a href="https://eoepca.github.io/um-pep-engine/"><strong>Explore the docs »</strong></a>
-    <br />
-    <a href="https://github.com/EOEPCA/um-pep-engine/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/EOEPCA/um-pep-engine/issues">Request Feature</a>
+    Policy Enforcement Point
   </p>
 </p>
-
-## Table of Contents
-
-- [Table of Contents](#table-of-contents)
-  - [Built With](#built-with)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Dependencies](#dependencies)
-- [Configuration](#configuration)
-- [Usage & functionality](#usage--functionality)
-- [Developer documentation](#developer-documentation)
-  - [Demo functionality](#demo-functionality)
-  - [Endpoints](#endpoints)
-  - [Resources cache](#resources-cache)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
-- [Acknowledgements](#acknowledgements)
-
-<!-- ABOUT THE PROJECT -->
-
-### Built With
-
-- [Python](https://www.python.org//)
-- [YAML](https://yaml.org/)
-- [Travis CI](https://travis-ci.com/)
-- [Docker](https://docker.com)
-- [Kubernetes](https://kubernetes.io)
 
 <!-- GETTING STARTED -->
 
 ## Getting Started
 
-To get a local copy up and running follow these simple steps.
+To get a local copy up and running follow these steps.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
+Required software:
 
 - [Docker](https://www.docker.com/)
 - [Python](https://www.python.org//)
 
 ### Installation
 
-1. Get into EOEPCA's development environment
+1. Clone the repo
 
 ```sh
-vagrant ssh
+git clone https://github.com/joaomatos-dme/um-pep-engine.git
 ```
 
-3. Clone the repo
-
-```sh
-git clone https://github.com/EOEPCA/um-pep-engine.git
-```
-
-4. Change local directory
+2. Change local directory
 
 ```sh
 cd um-pep-engine
@@ -95,32 +48,43 @@ The PEP is written and tested for python 3.6.9, and has all dependencies listed 
 The PEP gets all its configuration from the file located under `config/config.json`.
 The parameters that are accepted, and their meaning, are as follows:
 - **realm**: 'realm' parameter answered for each UMA ticket. Default is "eoepca"
-- **auth_server_url**: complete url (with "https") of the Authorization server.
+- **auth_server_url**: complete url (with "https") of the Authorization server (Gluu).
 - **proxy_endpoint**: "/path"-formatted string to indicate where the reverse proxy should listen. The proxy will catch any request that starts with that path. Default is "/pep"
 - **service_host**: Host for the proxy to listen on. For example, "0.0.0.0" will listen on all interfaces
-- **service_port**: Port for the proxy to listen on. By default, **5566**. Keep in mind you will have to edit the docker file and/or kubernetes yaml file in order for all the prot forwarding to work.
+- **service_port**: Port for the proxy to listen on. By default, **5566**. Keep in mind you will also have to edit the docker file if you intend to use a different port.
 - **s_margin_rpt_valid**: An integer representing how many seconds of "margin" do we want when checking RPT. For example, using **5** will make sure the provided RPT is valid now AND AT LEAST in the next 5 seconds.
 - **check_ssl_certs**: Toggle on/off (bool) to check certificates in all requests. This should be forced to True in a production environment
 - **use_threads**: Toggle on/off (bool) the usage of threads for the proxy. Recommended to be left as True.
 - **debug_mode**: Toggle on/off (bool) a debug mode of Flask. In a production environment, this should be false.
 - **resource_server_endpoint**: Complete url (with "https" and any port) of the Resource Server to protect with this PEP.
-- **client_id**: string indicating a client_id for an already registered and configured client. **This parameter is optional**. When not supplied, the PEP will generate a new client for itself and store it in this key inside the JSON.
-- **client_secret**: string indicating the client secret for the client_id. **This parameter is optional**. When not supplied, the PEP will generate a new client for itself and store it in this key inside the JSON.
+- **client_id**: string indicating a client_id for an already registered and configured client. Use the same client_id used in ID4EO where you configure the resources.
+- **client_secret**: string indicating the client secret for the client_id. Use the one that corresponds to the client_id used for ID4EO
 
 ## Usage & functionality
 
-Use directly from docker with
+For simplicity, docker is the best approach to run. First build the image (make sure you are in the folder where Dockerfile is):
+
 ```sh
-docker run --publish <configured-port>:<configured-port> <docker image>
+docker build -t nextgeoss-pep .
 ```
-Where **configured-port** is the port configured inside the config.json file inside the image. The default image is called **eoepca/um-pep-engine:latest**.
+
+Then simply run:
+```sh
+docker run -p 5566:5566 -d nextgeoss-pep
+```
+
+If by any reason you are unable to bind port 5566, you can use a different one:
+
+```sh
+docker run -p <desired-port>:5566 -d nextgeoss-pep
+```
 
 If this is running in a development environment without proper DNS setup, add the following to your docker run command:
 ```sh
 --add-host <auth-server-dns>:<your-ip>
 ```
 
-When launched, the PEP will answer to all requests that start with the configured path. These answers will come in the form of UUMA tickets (if there are no RPT provided, or an invalid one is used).
+When launched, the PEP will answer to all requests that start with the configured path. These answers will come in the form of UMA tickets (if there are no RPT provided, or an invalid one is used).
 In case the request is accompained by an "Authorization: Bearer <valid_RPT>", the PEP will make a request to the resource server, for the resource located exactly at the path requested (minus the configured at config), and return the resource's server answer.
 
 Examples, given the example values of:
@@ -138,66 +102,11 @@ Examples, given the example values of:
 | No RPT | pep.domain.com/pep/thing/with/large/path | Generate ticket for "/thing/with/large/path" | 401 + ticket |
 | Valid RPT for "/thing/with/large/path" | pep.domain.com/pep/thing/with/large/path | Request to remote.server.com/thing/with/large/path | Contents of remote.server.com/thing/with/large/path |
 
-## Developer documentation
-
-### Demo functionality
-
-At the moment, the PEP will auto register a resource for the sake of demoing it's capabilities, using the `create` function of the UMA handler. This can be deleted if unwanted, or expanded to dinamically register resources. Note that the UMA library used allows for full control over resources (create, delete, etc) and could be used to help in that functionality expansion.
-
-### Test functionality
-
-In order to test the PEP engine at the moment first you have reach this prerequisites:
-
-- Register a client and a user inside the gluu instance and update the test_settings.json
-- Disable current UMA Policies and set inside JSONConfig > OxAuth umaGrantAccessIfNoPolicies to true
-
-### Endpoints
-
-The PEP uses the following endpoints from a "Well Known Handler", which parses the Auth server's "well-known" endpoints:
-
-- OIDC_TOKEN_ENDPOINT
-- UMA_V2_RESOURCE_REGISTRATION_ENDPOINT
-- UMA_V2_PERMISSION_ENDPOINT
-- UMA_V2_INTROSPECTION_ENDPOIN
-
-### Resources Repository
-
-
-When a resource is registered, the name and id are stored as a document into a Mongodb database as a sidecar container sharing data through a persistent storage volume.
-The pod runs the pep-engine image and the mongo image exposing the default mongo port (27017) where communicates the service and keeps it alive for the pep-engine container to query the database.
-
-A local MongoDB service can be used to test the repo since the main script would listen the port 27017
-
-## Roadmap
-
-See the [open issues](https://github.com/EOEPCA/um-pep-engine/issues) for a list of proposed features (and known issues).
-
-
-## Contributing
-
-Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
 <!-- LICENSE -->
 
 ## License
 
 Distributed under the Apache-2.0 License. See `LICENSE` for more information.
-
-## Contact
-
-[EOEPCA mailbox](eoepca.systemteam@telespazio.com)
-
-Project Link: [https://github.com/EOEPCA/um-pep-engine](https://github.com/EOEPCA/um-pep-engine)
-
-## Acknowledgements
-
-- README.md is based on [this template](https://github.com/othneildrew/Best-README-Template) by [Othneil Drew](https://github.com/othneildrew).
 
 
 [contributors-shield]: https://img.shields.io/github/contributors/EOEPCA/um-pep-engine.svg?style=flat-square
