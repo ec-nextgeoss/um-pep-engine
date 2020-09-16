@@ -150,14 +150,14 @@ def split_headers(headers):
 def proxy_request(request, new_header):
     try:
         if request.method == 'POST':
-            res = post(g_config["resource_server_endpoint"], headers=new_header, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
+            res = post(g_config["resource_server_endpoint"]+request.full_path, headers=new_header, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
         elif request.method == 'GET':
-            res = get(g_config["resource_server_endpoint"], headers=new_header, stream=False, verify=g_config["check_ssl_certs"])
+            res = get(g_config["resource_server_endpoint"]+request.full_path, headers=new_header, stream=False, verify=g_config["check_ssl_certs"])
             print(res.url)
         elif request.method == 'PUT':
-            res = put(g_config["resource_server_endpoint"], headers=new_header, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
+            res = put(g_config["resource_server_endpoint"]+request.full_path, headers=new_header, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
         elif request.method == 'DELETE':
-            res = delete(g_config["resource_server_endpoint"], headers=new_header, stream=False, verify=g_config["check_ssl_certs"])
+            res = delete(g_config["resource_server_endpoint"]+request.full_path, headers=new_header, stream=False, verify=g_config["check_ssl_certs"])
         else:
             response = Response()
             response.status_code = 501
@@ -180,7 +180,7 @@ def resource_request(path):
     print("Processing path: '"+path+"'")
     rpt = request.headers.get('Authorization')
     # Get resource
-    resource_id = uma_handler.get_resource_from_uri(g_config["resource_server_endpoint"])
+    resource_id = uma_handler.get_resource_from_uri(path)
     print("FOUND RSID: "+resource_id)
     scopes = uma_handler.get_resource_scopes(resource_id)
     if rpt:
@@ -201,6 +201,7 @@ def resource_request(path):
             for key, value in headers_splitted.items():
                 new_header.add(key, value)
             # redirect to resource
+            request.full_path = path
             return proxy_request(request, new_header)
         print("Invalid RPT!, sending ticket")
         # In any other case, we have an invalid RPT, so send a ticket.
