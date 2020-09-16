@@ -147,24 +147,24 @@ def split_headers(headers):
 
     return d
 
-def proxy_request(request, new_header):
+def proxy_request(request):#, new_header):
     try:
         if request.method == 'POST':
-            res = post(g_config["resource_server_endpoint"]+request.full_path, headers=new_header, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
+            res = post(g_config["resource_server_endpoint"]+request.full_path, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
         elif request.method == 'GET':
-            res = get(g_config["resource_server_endpoint"]+request.full_path, headers=new_header, stream=False, verify=g_config["check_ssl_certs"])
+            res = get(g_config["resource_server_endpoint"]+request.full_path, stream=False, verify=g_config["check_ssl_certs"])
             print(res.url)
         elif request.method == 'PUT':
-            res = put(g_config["resource_server_endpoint"]+request.full_path, headers=new_header, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
+            res = put(g_config["resource_server_endpoint"]+request.full_path, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
         elif request.method == 'DELETE':
-            res = delete(g_config["resource_server_endpoint"]+request.full_path, headers=new_header, stream=False, verify=g_config["check_ssl_certs"])
+            res = delete(g_config["resource_server_endpoint"]+request.full_path, stream=False, verify=g_config["check_ssl_certs"])
         else:
             response = Response()
             response.status_code = 501
             return response
-        excluded_headers = ['transfer-encoding']
-        headers = [(name, value) for (name, value) in     res.raw.headers.items() if name.lower() not in excluded_headers]
-        response = Response(res.content, res.status_code, headers)
+        #excluded_headers = ['transfer-encoding']
+        #headers = [(name, value) for (name, value) in     res.raw.headers.items() if name.lower() not in excluded_headers]
+        response = Response(res.content, res.status_code)
         return response
     except Exception as e:
         response = Response()
@@ -180,7 +180,7 @@ def resource_request(path):
     print("Processing path: '"+path+"'")
     rpt = request.headers.get('Authorization')
     # Get resource
-    resource_id = uma_handler.get_resource_from_uri(path)
+    resource_id = uma_handler.get_resource_from_uri(g_config["resource_server_endpoint"])
     print("FOUND RSID: "+resource_id)
     scopes = uma_handler.get_resource_scopes(resource_id)
     if rpt:
@@ -189,20 +189,20 @@ def resource_request(path):
         # Validate for a specific resource
         if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], int(g_config["s_margin_rpt_valid"])) or not api_rpt_uma_validation:
             print("RPT valid, accessing...")
-            introspection_endpoint=g_wkh.get(TYPE_UMA_V2, KEY_UMA_V2_INTROSPECTION_ENDPOINT)
-            pat = oidc_client.get_new_pat()
-            rpt_class = class_rpt.introspect(rpt=rpt, pat=pat, introspection_endpoint=introspection_endpoint, secure=False)
-            jwt_rpt_response = create_jwt(rpt_class, private_key)
+            #introspection_endpoint=g_wkh.get(TYPE_UMA_V2, KEY_UMA_V2_INTROSPECTION_ENDPOINT)
+            #pat = oidc_client.get_new_pat()
+            #rpt_class = class_rpt.introspect(rpt=rpt, pat=pat, introspection_endpoint=introspection_endpoint, secure=False)
+            #jwt_rpt_response = create_jwt(rpt_class, private_key)
 
-            headers_splitted = split_headers(str(request.headers))
-            headers_splitted['Authorization'] = "Bearer "+str(jwt_rpt_response)
+            #headers_splitted = split_headers(str(request.headers))
+            #headers_splitted['Authorization'] = "Bearer "+str(jwt_rpt_response)
 
-            new_header = Headers()
-            for key, value in headers_splitted.items():
-                new_header.add(key, value)
+            #new_header = Headers()
+            #for key, value in headers_splitted.items():
+            #    new_header.add(key, value)
             # redirect to resource
-            request.full_path = path
-            return proxy_request(request, new_header)
+            request.full_path = request.full_path.replace(g_config["proxy_endpoint"], "")
+            return proxy_request(request)
         print("Invalid RPT!, sending ticket")
         # In any other case, we have an invalid RPT, so send a ticket.
         # Fallthrough intentional
