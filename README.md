@@ -49,14 +49,15 @@ The PEP gets all its configuration from the file located under `config/config.js
 The parameters that are accepted, and their meaning, are as follows:
 - **realm**: 'realm' parameter answered for each UMA ticket. Default is "eoepca"
 - **auth_server_url**: complete url (with "https") of the Authorization server (Gluu).
-- **proxy_endpoint**: "/path"-formatted string to indicate where the reverse proxy should listen. The proxy will catch any request that starts with that path. Default is "/pep"
+- **proxy_endpoints**: array of back-end services for which the PEP acts as a proxy. Each JSON Object defined inside this field has the following subfields:
+  - **base_url**: URL prefix for the requests (i.e. <pep>/<base_url>/<path> redirects to <resource_server_endpoint>/<path>
+  - **resource_server_endpoint**: Complete url (with "https" and any port) of the Resource Server to protect with this PEP.
 - **service_host**: Host for the proxy to listen on. For example, "0.0.0.0" will listen on all interfaces
 - **service_port**: Port for the proxy to listen on. By default, **5566**. Keep in mind you will also have to edit the docker file if you intend to use a different port.
 - **s_margin_rpt_valid**: An integer representing how many seconds of "margin" do we want when checking RPT. For example, using **5** will make sure the provided RPT is valid now AND AT LEAST in the next 5 seconds.
 - **check_ssl_certs**: Toggle on/off (bool) to check certificates in all requests. This should be forced to True in a production environment
 - **use_threads**: Toggle on/off (bool) the usage of threads for the proxy. Recommended to be left as True.
 - **debug_mode**: Toggle on/off (bool) a debug mode of Flask. In a production environment, this should be false.
-- **resource_server_endpoint**: Complete url (with "https" and any port) of the Resource Server to protect with this PEP.
 - **client_id**: string indicating a client_id for an already registered and configured client. Use the same client_id used in ID4EO where you configure the resources.
 - **client_secret**: string indicating the client secret for the client_id. Use the one that corresponds to the client_id used for ID4EO
 
