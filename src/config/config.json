@@ -1,1 +1,23 @@
-{"realm": "eoepca", "auth_server_url": "https://test.eoepca.org", "proxy_endpoint": "/", "service_host": "0.0.0.0", "service_port": 5566, "s_margin_rpt_valid": 5, "check_ssl_certs": false, "use_threads": true, "debug_mode": true, "resource_server_endpoint": "http://eoepca-ades-core", "api_rpt_uma_validation": true}
+{
+  "realm": "NextGEOSS",
+  "auth_server_url": "https://um.nextgeoss.eu",
+  "proxy_endpoints": [
+      {
+          "base_url": "/coresyf",
+          "resource_server_endpoint": "https://ec-coresyf-deployer.terradue.com"
+      },
+      {
+          "base_url": "/example",
+          "resource_server_endpoint": "https://example.nextgeoss.eu"
+      }
+  ],
+  "service_host": "0.0.0.0",
+  "service_port": 5566,
+  "s_margin_rpt_valid": 5,
+  "check_ssl_certs": false,
+  "use_threads": true,
+  "debug_mode": false,
+  "api_rpt_uma_validation": true,
+  "client_id": None,
+  "client_secret": None
+}

@@ -74,7 +74,7 @@ if "client_id" not in g_config or "client_secret" not in g_config:
     new_client = scim_client.registerClient("PEP Dynamic Client",
                                 grantTypes = ["client_credentials"],
                                 redirectURIs = [""],
-                                logoutURI = "", 
+                                logoutURI = "",
                                 responseTypes = ["code","token","id_token"],
                                 scopes = ['openid', 'uma_protection', 'permission'],
                                 token_endpoint_auth_method = ENDPOINT_AUTH_CLIENT_POST)
@@ -100,13 +100,6 @@ oidc_client = OIDCHandler(g_wkh,
 
 uma_handler = UMA_Handler(g_wkh, oidc_client, g_config["check_ssl_certs"])
 uma_handler.status()
-# Demo: register a new resource if it doesn't exist
-# try:
-#     uma_handler.create("ADES Service", ["Authenticated"], description="", icon_uri="/ADES")
-# except Exception as e:
-#     if "already exists" in str(e):
-#         print("Resource already existed, moving on")
-#     else: raise e
 
 app = Flask(__name__)
 app.secret_key = ''.join(choice(ascii_lowercase) for i in range(30)) # Random key
@@ -147,23 +140,28 @@ def split_headers(headers):
 
     return d
 
-def proxy_request(request):#, new_header):
+def resolve_endpoint(proxy_path):
+    base_url = proxy_path.split('/')[0]
+    endpoints = g_config["proxy_endpoints"]
+    for e in endpoints:
+        if e["base_url"] == base_url:
+            return e["resource_server_endpoint"]
+    return None
+
+def proxy_request(request,resource_server_endpoint):#, new_header):
     try:
         if request.method == 'POST':
-            res = post(g_config["resource_server_endpoint"]+request.full_path, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
+            res = post(resource_server_endpoint+request.full_path, data=request.data, stream=False, verify=g_config["check_ssl_certs"])
         elif request.method == 'GET':
-            res = get(g_config["resource_server_endpoint"]+request.full_path, stream=False, verify=g_config["check_ssl_certs"])
-            print(res.url)
+            res = get(resource_server_endpoint+request.full_path, stream=False, verify=g_config["check_ssl_certs"])
         elif request.method == 'PUT':
-            res = put(g_config["resource_server_endpoint"]+request.full_path, data=request.data, stream=False, verify=g_config["check_ssl_certs"])           
+            res = put(resource_server_endpoint+request.full_path, data=request.data, stream=False, verify=g_config["check_ssl_certs"])
         elif request.method == 'DELETE':
-            res = delete(g_config["resource_server_endpoint"]+request.full_path, stream=False, verify=g_config["check_ssl_certs"])
+            res = delete(resource_server_endpoint+request.full_path, stream=False, verify=g_config["check_ssl_certs"])
         else:
             response = Response()
             response.status_code = 501
             return response
-        #excluded_headers = ['transfer-encoding']
-        #headers = [(name, value) for (name, value) in     res.raw.headers.items() if name.lower() not in excluded_headers]
         response = Response(res.content, res.status_code)
         return response
     except Exception as e:
@@ -173,34 +171,26 @@ def proxy_request(request):#, new_header):
         response.content = "Error while redirecting to resource: "+str(e)
         return response
 
-@app.route(g_config["proxy_endpoint"], defaults={'path': ''})
-@app.route(g_config["proxy_endpoint"]+"/<path:path>", methods=["GET","POST","PUT","DELETE"])
+@app.route("/<path:path>", methods=["GET","POST","PUT","DELETE"])
 def resource_request(path):
     # Check for token
     print("Processing path: '"+path+"'")
+    resource_server_endpoint = resolve_endpoint(path)
+    if resource_server_endpoint is None:
+        response = Response()
+        response.status_code = 404
+        return response
     rpt = request.headers.get('Authorization')
     # Get resource
-    resource_id = uma_handler.get_resource_from_uri(g_config["resource_server_endpoint"])
+    resource_id = uma_handler.get_resource_from_uri(resource_server_endpoint)
     print("FOUND RSID: "+resource_id)
     scopes = uma_handler.get_resource_scopes(resource_id)
-    if rpt:
+    if rpt and resource_id is not None:
         print("Token found: "+rpt)
         rpt = rpt.replace("Bearer ","").strip()
         # Validate for a specific resource
         if uma_handler.validate_rpt(rpt, [{"resource_id": resource_id, "resource_scopes": scopes }], int(g_config["s_margin_rpt_valid"])) or not api_rpt_uma_validation:
             print("RPT valid, accessing...")
-            #introspection_endpoint=g_wkh.get(TYPE_UMA_V2, KEY_UMA_V2_INTROSPECTION_ENDPOINT)
-            #pat = oidc_client.get_new_pat()
-            #rpt_class = class_rpt.introspect(rpt=rpt, pat=pat, introspection_endpoint=introspection_endpoint, secure=False)
-            #jwt_rpt_response = create_jwt(rpt_class, private_key)
-
-            #headers_splitted = split_headers(str(request.headers))
-            #headers_splitted['Authorization'] = "Bearer "+str(jwt_rpt_response)
-
-            #new_header = Headers()
-            #for key, value in headers_splitted.items():
-            #    new_header.add(key, value)
-            # redirect to resource
             request.full_path = request.full_path.replace(g_config["proxy_endpoint"], "")
             return proxy_request(request)
         print("Invalid RPT!, sending ticket")
@@ -217,94 +207,9 @@ def resource_request(path):
         response.status_code = 401 # Answer with "Unauthorized" as per the standard spec.
         return response
     else:
-        print("No matched resource, passing through to resource server to handle")
-        # In this case, the PEP doesn't have that resource handled, and just redirects to it.
-        try:
-            cont = get(g_config["resource_server_endpoint"]+"/"+path).content
-            return cont
-        except Exception as e:
-            print("Error while redirecting to resource: "+str(e))
-            response.status_code = 500
-            return response
-            
-@app.route("/resources", methods=["GET"])
-def getResourceList():
-    print("Retrieving all registed resources...")
-    resources = uma_handler.get_resources()
-    pat = request.headers.get('Authorization')
-    response = Response()
-    resourceListToReturn = []
-    resourceListToValidate = []
-    if pat:
-        print("Token found: " + pat)
-        pat = pat.replace("Bearer ","").strip()
-        #Token was found, check for validation
-        for rID in resources:
-            #In here we will use the loop for 2 goals: build the resource list to validate (all of them) and the potential reply list of resources, to avoid a second loop
-            r = uma_handler.get_resource(rID)
-            entry = {'_id': r["_id"], 'name': r["name"]}
-            resourceListToReturn.append(entry)
-        if oidc_client.is_pat_valid(pat):
-            return json.dumps(resourceListToReturn)
-    print("No auth token, or auth token is invalid")
-    response.status_code = 401
-    return response
-
-@app.route("/resources/<resource_id>", methods=["GET", "PUT", "POST", "DELETE"])
-def resource_operation(resource_id):
-    print("Processing " + request.method + " resource request...")
-    response = Response()
-
-    #add resource is outside of rpt validation, as it only requires a client pat to register a new resource
-    try:
-        if request.method == "POST":
-            if request.is_json:
-                data = request.get_json()
-                if data.get("name") and data.get("resource_scopes") and data.get("name") == resource_id:
-                    return uma_handler.create(data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
-                else:
-                    response.status_code = 500
-                    response.headers["Error"] = "Invalid data or incorrect resource name passed on URL called for resource creation!"
-                    return response
-    except Exception as e:
-        print("Error while creating resource: "+str(e))
-        response.status_code = 500
-        response.headers["Error"] = str(e)
+        print("Could not find resource: "+str(e))
+        response.status_code = 404
         return response
-
-    pat = request.headers.get('Authorization')
-    if pat:
-        #Token was found, check for validation
-        print("Found pat in request, validating...")
-        pat = pat.replace("Bearer ","").strip()
-        if oidc_client.is_pat_valid(pat):
-            print("PAT valid, proceding...")
-            try:
-                #retrieve resource
-                if request.method == "GET":
-                    return uma_handler.get_resource(resource_id)
-                #update resource
-                elif request.method == "PUT":
-                    if request.is_json:
-                        data = request.get_json()
-                        if data.get("name") and data.get("resource_scopes"):
-                            uma_handler.update(resource_id, data.get("name"), data.get("resource_scopes"), data.get("description"), data.get("icon_uri"))
-                            response.status_code = 200
-                            return response
-                #delete resource
-                elif request.method == "DELETE":
-                    uma_handler.delete(resource_id)
-                    response.status_code = 204
-                    return response
-            except Exception as e:
-                print("Error while redirecting to resource: "+str(e))
-                response.status_code = 500
-                return response
-        
-    print("No auth token, or auth token is invalid")
-    response.status_code = 401
-    return response
-    
 
 
 # Start reverse proxy for x endpoint
