@@ -33,7 +33,7 @@ Required software:
 1. Clone the repo
 
 ```sh
-git clone https://github.com/joaomatos-dme/um-pep-engine.git
+git clone https://github.com/ec-nextgeoss/um-pep-engine.git
 ```
 
 2. Change local directory
