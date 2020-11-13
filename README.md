@@ -18,6 +18,7 @@
 
 ## Getting Started
 
+This Policy Enforcement Point is a variation of the EOEPCA's PEP Building Block [EOEPCA Project Repository](https://github.com/EOEPCA/)
 To get a local copy up and running follow these steps.
 
 ### Prerequisites
